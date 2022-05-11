@@ -31,7 +31,7 @@ namespace TestScript
                 return;
             }
 
-            Logging.Instance.WriteLine("Light hook controls for " + typeof(IMyLightingBlock).Name + " started.");
+            //Logging.Instance.WriteLine("Light hook controls for " + typeof(IMyLightingBlock).Name + " started.");
             separator = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSeparator, IMyLightingBlock>("lightlink_seperator");
             separator.Enabled = (MyObjectBuilder_LightingBlock) => { return true; };
             separator.Visible = (MyObjectBuilder_LightingBlock) => { return true; };
@@ -44,32 +44,32 @@ namespace TestScript
             listControl.VisibleRowsCount = 8;
             listControl.ItemSelected = (block, selected) =>
             {
-                Logging.Instance.WriteLine("Light item selected: " + block.DisplayNameText + "has selected:  " + selected.Count.ToString());
+                //Logging.Instance.WriteLine("Light item selected: " + block.DisplayNameText + "has selected:  " + selected.Count.ToString());
                 var localLight = (IMyLightingBlock)block;
                 if (localLight != null && selected.Count != 0)
                 {
                     string selectedTarget = ((long) selected.FirstOrDefault().UserData).ToString();
-                    Logging.Instance.WriteLine("Light: " + localLight.DisplayNameText + "has new value set: " + selectedTarget);
+                    //Logging.Instance.WriteLine("Light: " + localLight.DisplayNameText + "has new value set: " + selectedTarget);
                     if (localLight.Storage == null)
                     {
                         localLight.Storage = new MyModStorageComponent();
                     }
                     localLight.Storage.SetValue(StorageGuid, selectedTarget);
-                    Logging.Instance.WriteLine("Value set");
+                    //Logging.Instance.WriteLine("Value set");
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 }
             };
             listControl.ListContent = (block, items, selected) =>
             {
-                Logging.Instance.WriteLine("List content building!");
+                //Logging.Instance.WriteLine("List content building!");
                 var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
-                Logging.Instance.WriteLine("Source block as lightsource: " + localLight == null ? "NULL" : "Not Null");
+                //Logging.Instance.WriteLine("Source block as lightsource: " + localLight == null ? "NULL" : "Not Null");
                 items.Add(new MyTerminalControlListBoxItem(MyStringId.GetOrCompute("None"),
                     MyStringId.GetOrCompute("None"), 0));
-                Logging.Instance.WriteLine("Added None Entry");
+                //Logging.Instance.WriteLine("Added None Entry");
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
                 var funcBlocks = block.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
-                Logging.Instance.WriteLine("Found " + funcBlocks.ToList().Count + " functional block sources");
+                //Logging.Instance.WriteLine("Found " + funcBlocks.ToList().Count + " functional block sources");
                 long targetId = long.Parse(block.Storage?.GetValue(StorageGuid) ?? "0");
                 foreach (var funcBlock in funcBlocks)
                 {
@@ -77,7 +77,7 @@ namespace TestScript
                         MyStringId.GetOrCompute(funcBlock.Name), funcBlock.EntityId);
                     if (funcBlock.EntityId == targetId)
                     {
-                        Logging.Instance.WriteLine("Setting " + funcBlock.DisplayNameText + "to selected");
+                        //Logging.Instance.WriteLine("Setting " + funcBlock.DisplayNameText + "to selected");
                         selected.Add(newItem);
                     }
 
@@ -91,12 +91,15 @@ namespace TestScript
                 }
 
                 listControl.RedrawControl();
-                Logging.Instance.WriteLine("Redrawn");
+                //Logging.Instance.WriteLine("Redrawn");
 
             };
 
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(separator);
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(listControl);
+            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(separator);
+            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(listControl);
+
         }
     }
 }

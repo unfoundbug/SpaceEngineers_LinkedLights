@@ -20,8 +20,8 @@ using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 namespace UnFoundBug.LightLink
 {
     //here you can use any objectbuiler e.g. MyObjectBuilder_Door, MyObjectBuilder_Decoy
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorLight), true)]
-    public class InteriorLightHooks : MyGameLogicComponent
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_SignalLight), true)]
+    public class MovingLightHooks : MyGameLogicComponent
     {
         private IMyLightingBlock BaseLight => (IMyLightingBlock)this.Entity;
 
@@ -32,7 +32,7 @@ namespace UnFoundBug.LightLink
         {
         }
 
-        public InteriorLightHooks()
+        public MovingLightHooks()
         {
             //Logging.Instance.WriteLine("MyObjectBuilder_InteriorLightConstructed!");
             BaseLightHooks.AttachControls();

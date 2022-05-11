@@ -68,8 +68,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseLightHooks.cs" />
+    <Compile Include="ReflectorLightHooks.cs" />
+    <Compile Include="MovingLightHooks.cs" />
     <Compile Include="InteriorLightHooks.cs" />
-    <Compile Include="Logging.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.  

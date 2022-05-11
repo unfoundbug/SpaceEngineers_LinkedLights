@@ -13,10 +13,12 @@ Developed by UnFoundBug.
 	For example, warning lights which turn on when a welder or grinder is inactive.
 	Or mood lighting when reactors are turned on. 
 
-	KNWON ISSUE:
-		Sometimes when quick-loading space engineers reports the save as corrupt, this is not actually true, reloading the save allows things to resume. 
 
 ======================
+
+V0.0.2
+	New supported lights: Rotating Lights, Spot Lights
+	Fix for quick save/load bug
 
 V0.0.1: ModAPI Implementation of Linked Lights
 	New Supported Lights: Interior Light, Light Panel
