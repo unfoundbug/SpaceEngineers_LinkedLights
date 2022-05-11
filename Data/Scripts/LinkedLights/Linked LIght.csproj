@@ -68,9 +68,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseLightHooks.cs" />
+    <Compile Include="LightHookHelper.cs" />
     <Compile Include="MovingLightHooks.cs" />
     <Compile Include="InteriorLightHooks.cs" />
     <Compile Include="ReflectorLightHooks.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="packages\StyleCop.Analyzers.1.1.118\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
+    <Analyzer Include="packages\StyleCop.Analyzers.1.1.118\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
