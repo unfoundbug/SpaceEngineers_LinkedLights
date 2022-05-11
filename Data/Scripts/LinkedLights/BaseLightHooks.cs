@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Sandbox.Game.Entities.Blocks;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.ModAPI;
@@ -10,18 +12,14 @@ using VRage.Utils;
 
 namespace TestScript
 {
-    public class BaseLightHooks
+    public static class BaseLightHooks
     {
         private static bool controlsInit = false;
-        private static Guid storageGuid = new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
+        public  static Guid StorageGuid => new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
         private static IMyTerminalControlSeparator separator;
         private static IMyTerminalControlListbox listControl;
 
-        public BaseLightHooks()
-        {
-            
-        }
-        
+
         public static  void AttachControls()
         {
             if (!controlsInit)
@@ -46,10 +44,18 @@ namespace TestScript
             listControl.VisibleRowsCount = 8;
             listControl.ItemSelected = (block, selected) =>
             {
-                var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
-                if (localLight != null)
+                Logging.Instance.WriteLine("Light item selected: " + block.DisplayNameText + "has selected:  " + selected.Count.ToString());
+                var localLight = (IMyLightingBlock)block;
+                if (localLight != null && selected.Count != 0)
                 {
-                    localLight.Storage.SetValue(storageGuid, selected.FirstOrDefault()?.UserData.ToString() ?? "0");
+                    string selectedTarget = ((long) selected.FirstOrDefault().UserData).ToString();
+                    Logging.Instance.WriteLine("Light: " + localLight.DisplayNameText + "has new value set: " + selectedTarget);
+                    if (localLight.Storage == null)
+                    {
+                        localLight.Storage = new MyModStorageComponent();
+                    }
+                    localLight.Storage.SetValue(StorageGuid, selectedTarget);
+                    Logging.Instance.WriteLine("Value set");
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 }
             };
@@ -64,13 +70,12 @@ namespace TestScript
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
                 var funcBlocks = block.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
                 Logging.Instance.WriteLine("Found " + funcBlocks.ToList().Count + " functional block sources");
-                var target = foundBlockList.FirstOrDefault(found => found.EntityId == long.Parse(block.Storage.GetValue(storageGuid)));
+                long targetId = long.Parse(block.Storage?.GetValue(StorageGuid) ?? "0");
                 foreach (var funcBlock in funcBlocks)
                 {
-                    Logging.Instance.WriteLine("Adding " + funcBlock.Name + "to list");
                     var newItem = new MyTerminalControlListBoxItem(MyStringId.GetOrCompute(funcBlock.DisplayNameText),
                         MyStringId.GetOrCompute(funcBlock.Name), funcBlock.EntityId);
-                    if (funcBlock == target)
+                    if (funcBlock.EntityId == targetId)
                     {
                         Logging.Instance.WriteLine("Setting " + funcBlock.DisplayNameText + "to selected");
                         selected.Add(newItem);
