@@ -73,6 +73,11 @@
     <Compile Include="ReflectorLightHooks.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>pushd $(ProjectDir)..\..\..\
+powershell -executionpolicy unrestricted -File ".\PrepPublish.ps1"
+popd</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.  
        Other similar extension points exist, see Microsoft.Common.targets. 
   <Target Name="BeforeBuild">
