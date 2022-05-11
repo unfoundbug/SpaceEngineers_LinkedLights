@@ -11,5 +11,9 @@ mkdir "$newOutDir"
 Get-ChildItem .\* -File | Foreach-Object { Copy-Item -Path "$($_.FullName)" -Destination "$(Join-Path $newOutDir $($_.Name))" }
 
 mkdir "$newOutDir\Data"
-Copy-Item ".\Data\" "$newOutDir\Data\" -Recurse -Include "*.sbc"
-Copy-Item ".\Data\" "$newOutDir\Data\" -Recurse -Include "*.cs"
+mkdir "$newOutDir\Data\Scripts"
+mkdir "$newOutDir\Data\Scripts\LinkedLights"
+Get-ChildItem .\Data\*.sbc -File | Foreach-Object { Copy-Item -Path "$($_.FullName)" -Destination "$(Join-Path $newOutDir "Data" )"}
+mkdir "$newOutDir\Data\Scripts"
+mkdir "$newOutDir\Data\Scripts\LinkedLights"
+Get-ChildItem .\Data\Scripts\LinkedLights\*.cs -File | Foreach-Object { Copy-Item -Path "$($_.FullName)" -Destination "$(Join-Path $newOutDir "Data\Scripts\LinkedLights\" )"}
