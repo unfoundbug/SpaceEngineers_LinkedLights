@@ -50,8 +50,7 @@ namespace UnFoundBug.LightLink
         {
             base.UpdateOnceBeforeFrame();
             //Logging.Instance.WriteLine("Light update for " + this.BaseLight.DisplayNameText + " started.");
-
-            long targetBlockId = long.Parse(this.BaseLight.Storage?.GetValue(BaseLightHooks.StorageGuid) ?? "0");
+            long targetBlockId = BaseLightHooks.GetTargetId(this.BaseLight);
             //Logging.Instance.WriteLine("Found target block: " + targetBlockId.ToString());
             if (targetBlockId != 0)
             {
@@ -102,7 +101,6 @@ namespace UnFoundBug.LightLink
             if (newTarget != null)
             {
                 this.targetBlock = newTarget;
-                var targetAsTool = targetBlock as IMyShipToolBase;
                 this.targetBlock.OnMarkForClose += TargetBlock_OnMarkForClose;
             }
         }

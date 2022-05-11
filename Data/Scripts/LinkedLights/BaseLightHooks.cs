@@ -15,11 +15,29 @@ namespace TestScript
     public static class BaseLightHooks
     {
         private static bool controlsInit = false;
-        public  static Guid StorageGuid => new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
+        private static Guid storageGuid => new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
         private static IMyTerminalControlSeparator separator;
         private static IMyTerminalControlListbox listControl;
 
+        public static long GetTargetId(IMyLightingBlock source)
+        {
+            long targetBlockId = 0;
+            if (source?.Storage?.ContainsKey(storageGuid) ?? false)
+            {
+                targetBlockId = long.Parse(source.Storage.GetValue(storageGuid));
+            }
 
+            return targetBlockId;
+        }
+
+        public static void SetTargetId(IMyLightingBlock target, long value)
+        {
+            if (target.Storage == null)
+            {
+                target.Storage = new MyModStorageComponent();
+            }
+            target.Storage.SetValue(storageGuid, value.ToString());
+        }
         public static  void AttachControls()
         {
             if (!controlsInit)
@@ -50,11 +68,7 @@ namespace TestScript
                 {
                     string selectedTarget = ((long) selected.FirstOrDefault().UserData).ToString();
                     //Logging.Instance.WriteLine("Light: " + localLight.DisplayNameText + "has new value set: " + selectedTarget);
-                    if (localLight.Storage == null)
-                    {
-                        localLight.Storage = new MyModStorageComponent();
-                    }
-                    localLight.Storage.SetValue(StorageGuid, selectedTarget);
+                    SetTargetId(localLight, (long)(selected.FirstOrDefault()?.UserData ?? 0));
                     //Logging.Instance.WriteLine("Value set");
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 }
@@ -70,7 +84,7 @@ namespace TestScript
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
                 var funcBlocks = block.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
                 //Logging.Instance.WriteLine("Found " + funcBlocks.ToList().Count + " functional block sources");
-                long targetId = long.Parse(block.Storage?.GetValue(StorageGuid) ?? "0");
+                long targetId = BaseLightHooks.GetTargetId(block as IMyLightingBlock);
                 foreach (var funcBlock in funcBlocks)
                 {
                     var newItem = new MyTerminalControlListBoxItem(MyStringId.GetOrCompute(funcBlock.DisplayNameText),

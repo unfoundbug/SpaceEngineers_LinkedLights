@@ -15,7 +15,8 @@ Developed by UnFoundBug.
 
 
 ======================
-
+V0.0.3
+	Fix new world crash.
 V0.0.2
 	New supported lights: Rotating Lights, Spot Lights
 	Fix for quick save/load bug
