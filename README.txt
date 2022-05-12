@@ -15,6 +15,13 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.0.5
+	Enable selection of enable sources. Enabled, Active, Charging and Charged can be selected
+	Enable searching of sub-grids
+	Increased storage complexity to allow storage of not only linked blocks, but also enable source per light
+	KNOWN ISSUE: Currently the List box does not update when subgrid searching is enabled/disabled, requires the block to be left and re-entered
+V0.0.4
+	Code reorganise and opimisations.
 V0.0.3
 	Fix new world crash.
 V0.0.2

@@ -2,7 +2,11 @@
 // Copyright (c) UnFoundBug. All rights reserved.
 // </copyright>
 
-namespace TestScript
+using System.Collections.Generic;
+using Sandbox.ModAPI.Ingame;
+using VRage.Game.ModAPI;
+
+namespace UnFoundBug.LightLink
 {
     using System.Linq;
     using Sandbox.ModAPI;
@@ -16,6 +20,8 @@ namespace TestScript
     public class BaseLightHooks : MyGameLogicComponent
     {
         private IMyFunctionalBlock targetBlock = null;
+
+        private StorageHandler sHandler;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseLightHooks"/> class.
@@ -40,6 +46,7 @@ namespace TestScript
             base.Init(objectBuilder);
             this.Entity.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             this.Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+            this.sHandler = new StorageHandler(this.Entity);
         }
 
         /// <inheritdoc/>
@@ -48,14 +55,31 @@ namespace TestScript
             base.UpdateOnceBeforeFrame();
 
             // Logging.Instance.WriteLine("Light update for " + this.BaseLight.DisplayNameText + " started.");
-            long targetBlockId = LightHookHelper.GetTargetId(this.BaseLight);
+            this.sHandler.Deserialise();
 
             // Logging.Instance.WriteLine("Found target block: " + targetBlockId.ToString());
-            if (targetBlockId != 0)
+            if (this.sHandler.TargetEntity != 0)
             {
-                var funcBlocks = this.BaseLight.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
-                var target = funcBlocks.FirstOrDefault(found => found.EntityId == targetBlockId);
-                this.AttachTarget(target);
+                List<IMyCubeGrid> activeGrids = new List<IMyCubeGrid>();
+                if (!sHandler.SubGridScanningEnable)
+                {
+                    activeGrids.Add(this.BaseLight.CubeGrid);
+                }
+                else
+                {
+                    var foundGrids = this.BaseLight.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
+                }
+
+                foreach (var grid in activeGrids)
+                {
+                    var funcBlocks = this.BaseLight.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
+                    var target = funcBlocks.FirstOrDefault(found => found.EntityId == this.sHandler.TargetEntity);
+                    if (target != null)
+                    {
+                        this.AttachTarget(target);
+                        break;
+                    }
+                }
             }
             else
             {
@@ -67,22 +91,59 @@ namespace TestScript
         public override void UpdateBeforeSimulation10()
         {
             base.UpdateBeforeSimulation10();
-            if (this.targetBlock != null)
+
+            if (this.targetBlock == null)
+            {
+                return;
+            }
+
+            bool newEnable = false;
+
+            if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable)
+            {
+                newEnable |= this.targetBlock.Enabled;
+            }
+
+            if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_IsFunctional) == LightEnableOptions.Generic_IsFunctional)
+            {
+                newEnable |= this.targetBlock.IsFunctional;
+            }
+
+            if ((this.sHandler.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
             {
                 if (this.targetBlock is IMyShipToolBase)
                 {
                     var asTool = this.targetBlock as IMyShipToolBase;
-                    var newEn = asTool.Enabled | asTool.IsActivated;
-                    if (this.BaseLight.Enabled != newEn)
-                    {
-                        this.BaseLight.Enabled = newEn;
-                    }
+                    newEnable |= asTool.IsActivated;
                 }
-                else
+                else if (this.targetBlock is IMyProductionBlock)
                 {
-                    // Logging.Instance.WriteLine(this.BaseLight.DisplayNameText + "is changing to " + this.targetBlock.Enabled.ToString());
-                    this.BaseLight.Enabled = this.targetBlock.Enabled;
+                    var asRef = this.targetBlock as IMyProductionBlock;
+                    newEnable |= asRef.IsProducing;
                 }
+            }
+
+            if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) == LightEnableOptions.Battery_Charging)
+            {
+                if (this.targetBlock is IMyBatteryBlock)
+                {
+                    var asBatt = this.targetBlock as IMyBatteryBlock;
+                    newEnable |= asBatt.IsCharging;
+                }
+            }
+
+            if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_ChargeMode) == LightEnableOptions.Battery_ChargeMode)
+            {
+                if (this.targetBlock is IMyBatteryBlock)
+                {
+                    var asBatt = this.targetBlock as IMyBatteryBlock;
+                    newEnable |= asBatt.ChargeMode == ChargeMode.Recharge;
+                }
+            }
+
+            if (this.BaseLight.Enabled != newEnable)
+            {
+                this.BaseLight.Enabled = newEnable;
             }
         }
 

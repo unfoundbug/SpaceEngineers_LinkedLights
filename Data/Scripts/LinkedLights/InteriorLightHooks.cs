@@ -5,7 +5,6 @@
 namespace UnFoundBug.LightLink
 {
     using Sandbox.Common.ObjectBuilders;
-    using TestScript;
     using VRage.Game.Components;
 
     /// <summary>

@@ -68,10 +68,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseLightHooks.cs" />
+    <Compile Include="LightEnableOptions.cs" />
     <Compile Include="LightHookHelper.cs" />
     <Compile Include="MovingLightHooks.cs" />
     <Compile Include="InteriorLightHooks.cs" />
     <Compile Include="ReflectorLightHooks.cs" />
+    <Compile Include="StorageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
