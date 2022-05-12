@@ -1,4 +1,4 @@
-Space Engineeers Workshop;
+Space Engineers Workshop;
 Unfoundbug Light Linker 
 https://steamcommunity.com/sharedfiles/filedetails/?id=2806143877
 
@@ -16,12 +16,16 @@ Developed by UnFoundBug.
 
 ======================
 V0.0.5
-	Enable selection of enable sources. Enabled, Active, Charging and Charged can be selected
+	Enable selection of enable sources. Enabled, Active, Charging and Recharge Mode can be selected
+		Enabled: Whether the block is enabled to receive power or not
+		Active: Whether a ship tool is forced on or controlled by a mouse click
+		Charging: If a battery is currently charging from the grid.
+		Recharge Mode: If a battery is set to recharge mode.
 	Enable searching of sub-grids
 	Increased storage complexity to allow storage of not only linked blocks, but also enable source per light
 	KNOWN ISSUE: Currently the List box does not update when subgrid searching is enabled/disabled, requires the block to be left and re-entered
 V0.0.4
-	Code reorganise and opimisations.
+	Code reorganise and optimisations.
 V0.0.3
 	Fix new world crash.
 V0.0.2
