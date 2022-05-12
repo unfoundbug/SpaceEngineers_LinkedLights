@@ -2,14 +2,13 @@
 // Copyright (c) UnFoundBug. All rights reserved.
 // </copyright>
 
-using VRage.Game.ModAPI;
-
 namespace UnFoundBug.LightLink
 {
-    using Sandbox.ModAPI;
-    using Sandbox.ModAPI.Interfaces.Terminal;
     using System.Collections.Generic;
     using System.Linq;
+    using Sandbox.ModAPI;
+    using Sandbox.ModAPI.Interfaces.Terminal;
+    using VRage.Game.ModAPI;
     using VRage.ModAPI;
     using VRage.Utils;
 
@@ -21,8 +20,8 @@ namespace UnFoundBug.LightLink
         private static bool controlsInit = false;
         private static IMyTerminalControlSeparator separator;
         private static IMyTerminalControlListbox listControl;
-        private static IMyTerminalControlCheckbox scanSubgridCb;
-        private static IMyTerminalControlCheckbox filterListCB;
+        private static IMyTerminalControlOnOffSwitch scanSubgridCb;
+        private static IMyTerminalControlOnOffSwitch filterListCB;
         private static IMyTerminalControlListbox flagControl;
 
         /// <summary>
@@ -44,8 +43,10 @@ namespace UnFoundBug.LightLink
             separator.Enabled = (lb) => true;
             separator.Visible = (lb) => true;
 
-            scanSubgridCb = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlCheckbox, IMyLightingBlock>("lightlink_scanSubGrid");
+            scanSubgridCb = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyLightingBlock>("lightlink_scanSubGrid");
             scanSubgridCb.Title = MyStringId.GetOrCompute("Scan Subgrids");
+            scanSubgridCb.OnText = MyStringId.GetOrCompute("Enabled");
+            scanSubgridCb.OffText = MyStringId.GetOrCompute("Disabled");
             scanSubgridCb.Tooltip = MyStringId.GetOrCompute("WARNING: Can cause alot of server load!");
             scanSubgridCb.Getter = block =>
             {
@@ -61,9 +62,11 @@ namespace UnFoundBug.LightLink
             };
             scanSubgridCb.Visible = block => true;
 
-            filterListCB = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlCheckbox, IMyLightingBlock>("lightlink_scanSubGrid");
+            filterListCB = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyLightingBlock>("lightlink_scanSubGrid");
             filterListCB.Title = MyStringId.GetOrCompute("Filter Available blocks");
-            filterListCB.Tooltip = MyStringId.GetOrCompute("Filters less interesting blocks from appearing in the list");
+            filterListCB.Tooltip = MyStringId.GetOrCompute("Filters less interesting blocks from appearing in the list, re-enter the menu for this to take effect.");
+            filterListCB.OnText = MyStringId.GetOrCompute("Enabled");
+            filterListCB.OffText = MyStringId.GetOrCompute("Disabled");
             filterListCB.Getter = block =>
             {
                 StorageHandler handler = new StorageHandler(block);
@@ -73,7 +76,6 @@ namespace UnFoundBug.LightLink
             {
                 StorageHandler handler = new StorageHandler(block);
                 handler.BlockFiltering = value;
-                listControl.RedrawControl();
                 listControl.UpdateVisual();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
@@ -178,12 +180,11 @@ namespace UnFoundBug.LightLink
                 LightEnableOptions resultant = 0;
                 foreach (var selection in selected)
                 {
-                    resultant |= (LightEnableOptions) selection.UserData;
+                    resultant |= (LightEnableOptions)selection.UserData;
                 }
 
                 StorageHandler handler = new StorageHandler(block);
                 handler.ActiveFlags = resultant;
-                flagControl.RedrawControl();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             flagControl.ListContent = (block, items, selected) =>
@@ -196,31 +197,46 @@ namespace UnFoundBug.LightLink
                     MyStringId.GetOrCompute("Enable"),
                     MyStringId.GetOrCompute("Is the block Enabled"),
                     LightEnableOptions.Generic_Enable));
-                if((storage.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable) selected.Add(items.Last());
+                if ((storage.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable)
+                {
+                    selected.Add(items.Last());
+                }
 
                 items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("Functional"),
                     MyStringId.GetOrCompute("Is the block in a runnable state"),
                     LightEnableOptions.Generic_IsFunctional));
-                if ((storage.ActiveFlags & LightEnableOptions.Generic_IsFunctional) == LightEnableOptions.Generic_IsFunctional) selected.Add(items.Last());
+                if ((storage.ActiveFlags & LightEnableOptions.Generic_IsFunctional) == LightEnableOptions.Generic_IsFunctional)
+                {
+                    selected.Add(items.Last());
+                }
 
                 items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("Active"),
                     MyStringId.GetOrCompute("Tools only: Is the tool running"),
                     LightEnableOptions.Tool_IsActive));
-                if ((storage.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive) selected.Add(items.Last());
+                if ((storage.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
+                {
+                    selected.Add(items.Last());
+                }
 
                 items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("Charging"),
                     MyStringId.GetOrCompute("Batteries only: Is the battery charging"),
                     LightEnableOptions.Battery_Charging));
-                if ((storage.ActiveFlags & LightEnableOptions.Battery_Charging) == LightEnableOptions.Battery_Charging) selected.Add(items.Last());
+                if ((storage.ActiveFlags & LightEnableOptions.Battery_Charging) == LightEnableOptions.Battery_Charging)
+                {
+                    selected.Add(items.Last());
+                }
 
                 items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("Recharge Mode"),
                     MyStringId.GetOrCompute("Batteries only: is the battery set to charge mode"),
                     LightEnableOptions.Battery_ChargeMode));
-                if ((storage.ActiveFlags & LightEnableOptions.Battery_ChargeMode) == LightEnableOptions.Battery_ChargeMode) selected.Add(items.Last());
+                if ((storage.ActiveFlags & LightEnableOptions.Battery_ChargeMode) == LightEnableOptions.Battery_ChargeMode)
+                {
+                    selected.Add(items.Last());
+                }
             };
 
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(separator);

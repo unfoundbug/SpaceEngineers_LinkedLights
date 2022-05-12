@@ -2,25 +2,20 @@
 // Copyright (c) UnFoundBug. All rights reserved.
 // </copyright>
 
-using System.Runtime.CompilerServices;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.ModAPI;
-
 namespace UnFoundBug.LightLink
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using System.Threading.Tasks;
+    using Sandbox.Game.EntityComponents;
+    using VRage.ModAPI;
 
     /// <summary>
-    /// Serialises and Deserialises entity storage
+    /// Serialises and Deserialises entity storage.
     /// </summary>
     public class StorageHandler
     {
-        private static Guid StorageGuid = new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
+        private static readonly Guid StorageGuid = new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
 
         private LightEnableOptions flags = LightEnableOptions.Generic_Enable;
         private bool subGridScanning = false;
@@ -39,6 +34,10 @@ namespace UnFoundBug.LightLink
          *      ActiveFlags
          */
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StorageHandler"/> class.
+        /// </summary>
+        /// <param name="source">Source entity to load from.</param>
         public StorageHandler(IMyEntity source)
         {
             this.source = source;
@@ -48,6 +47,9 @@ namespace UnFoundBug.LightLink
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value representing the flags for light enable source.
+        /// </summary>
         public LightEnableOptions ActiveFlags
         {
             get
@@ -62,7 +64,10 @@ namespace UnFoundBug.LightLink
             }
         }
 
-        public bool SubGridScanningEnable 
+        /// <summary>
+        /// Gets or sets a value indicating whether sub-grids should be scanned for the target entity.
+        /// </summary>
+        public bool SubGridScanningEnable
         {
             get
             {
@@ -76,7 +81,10 @@ namespace UnFoundBug.LightLink
             }
         }
 
-        public bool BlockFiltering 
+        /// <summary>
+        /// Gets or sets a value indicating whether the blocks available on the UI for linkage are filtered down.
+        /// </summary>
+        public bool BlockFiltering
         {
             get
             {
@@ -90,6 +98,9 @@ namespace UnFoundBug.LightLink
             }
         }
 
+        /// <summary>
+        /// Gets or sets the Linked entity ID.
+        /// </summary>
         public long TargetEntity
         {
             get
@@ -104,6 +115,10 @@ namespace UnFoundBug.LightLink
             }
         }
 
+        /// <summary>
+        /// Deserialises the entity mod storage into current properties.
+        /// </summary>
+        /// <returns>Returns true if the loaded settings should be saved back to mod storage.</returns>
         public bool Deserialise()
         {
             bool newSettingsRequired = true;

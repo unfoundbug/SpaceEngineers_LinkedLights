@@ -2,15 +2,13 @@
 // Copyright (c) UnFoundBug. All rights reserved.
 // </copyright>
 
-using System.Collections.Generic;
-using Sandbox.ModAPI.Ingame;
-using VRage.Game.ModAPI;
-
 namespace UnFoundBug.LightLink
 {
+    using System.Collections.Generic;
     using System.Linq;
     using Sandbox.ModAPI;
     using VRage.Game.Components;
+    using VRage.Game.ModAPI;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
@@ -61,7 +59,7 @@ namespace UnFoundBug.LightLink
             if (this.sHandler.TargetEntity != 0)
             {
                 List<IMyCubeGrid> activeGrids = new List<IMyCubeGrid>();
-                if (!sHandler.SubGridScanningEnable)
+                if (!this.sHandler.SubGridScanningEnable)
                 {
                     activeGrids.Add(this.BaseLight.CubeGrid);
                 }
@@ -119,7 +117,7 @@ namespace UnFoundBug.LightLink
                 else if (this.targetBlock is IMyProductionBlock)
                 {
                     var asRef = this.targetBlock as IMyProductionBlock;
-                    newEnable |= asRef.IsProducing;
+                    newEnable |= asRef.IsProducing && asRef.Enabled;
                 }
             }
 
@@ -137,7 +135,7 @@ namespace UnFoundBug.LightLink
                 if (this.targetBlock is IMyBatteryBlock)
                 {
                     var asBatt = this.targetBlock as IMyBatteryBlock;
-                    newEnable |= asBatt.ChargeMode == ChargeMode.Recharge;
+                    newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
                 }
             }
 
