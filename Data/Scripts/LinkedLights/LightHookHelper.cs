@@ -169,6 +169,11 @@ namespace UnFoundBug.LightLink
                             }
                         }
 
+                        if (!funcBlock.ShowInTerminal)
+                        {
+                            continue;
+                        }
+
                         var newItem = new MyTerminalControlListBoxItem(
                             MyStringId.GetOrCompute(funcBlock.DisplayNameText),
                             MyStringId.GetOrCompute(funcBlock.Name),
