@@ -15,6 +15,12 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.0.6
+	Better filtering of 'less interesting' blocks
+	Filtering enabled by default
+	New Charged enable source.
+		When a battery is selected, Charged represents the battery above 99% charge. 99% is used instead of 100% to prevent flickering.
+
 V0.0.5
 	Enable selection of enable sources. Enabled, Active, Charging and Recharge Mode can be selected
 		Enabled: Whether the block is enabled to receive power or not
