@@ -26,7 +26,6 @@ namespace UnFoundBug.LightLink
         /// </summary>
         public BaseLightHooks()
         {
-            // Logging.Instance.WriteLine("MyObjectBuilder_InteriorLightConstructed!");
             LightHookHelper.AttachControls();
         }
 
@@ -40,7 +39,6 @@ namespace UnFoundBug.LightLink
         /// <inheritdoc/>
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            // Logging.Instance.WriteLine("MyObjectBuilder Init started");
             base.Init(objectBuilder);
             this.Entity.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             this.Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
@@ -52,10 +50,8 @@ namespace UnFoundBug.LightLink
         {
             base.UpdateOnceBeforeFrame();
 
-            // Logging.Instance.WriteLine("Light update for " + this.BaseLight.DisplayNameText + " started.");
             this.sHandler.Deserialise();
 
-            // Logging.Instance.WriteLine("Found target block: " + targetBlockId.ToString());
             if (this.sHandler.TargetEntity != 0)
             {
                 List<IMyCubeGrid> activeGrids = new List<IMyCubeGrid>();
@@ -127,6 +123,15 @@ namespace UnFoundBug.LightLink
                 {
                     var asBatt = this.targetBlock as IMyBatteryBlock;
                     newEnable |= asBatt.IsCharging;
+                }
+            }
+
+            if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charged) == LightEnableOptions.Battery_Charged)
+            {
+                if (this.targetBlock is IMyBatteryBlock)
+                {
+                    var asBatt = this.targetBlock as IMyBatteryBlock;
+                    newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
                 }
             }
 

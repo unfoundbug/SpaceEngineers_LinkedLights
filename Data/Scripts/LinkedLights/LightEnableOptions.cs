@@ -40,5 +40,10 @@ namespace UnFoundBug.LightLink
         /// The selected battery is in charge mode and full
         /// </summary>
         Battery_ChargeMode = 1 << 5,
+
+        /// <summary>
+        /// The selected Battery is at 99% or above charge
+        /// </summary>
+        Battery_Charged = 1 << 6,
     }
 }

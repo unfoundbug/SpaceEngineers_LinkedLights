@@ -8,6 +8,7 @@ namespace UnFoundBug.LightLink
     using System.Linq;
     using System.Text;
     using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
     using VRage.ModAPI;
 
     /// <summary>
@@ -16,12 +17,12 @@ namespace UnFoundBug.LightLink
     public class StorageHandler
     {
         private static readonly Guid StorageGuid = new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
+        private readonly IMyEntity source;
 
         private LightEnableOptions flags = LightEnableOptions.Generic_Enable;
         private bool subGridScanning = false;
-        private bool blockFiltering = false;
+        private bool blockFiltering = true;
         private long targetEntity = 0;
-        private IMyEntity source;
 
         /*
          *  V0
@@ -43,7 +44,11 @@ namespace UnFoundBug.LightLink
             this.source = source;
             if (!this.Deserialise())
             {
-                this.Serialise();
+                // load reduction where possible
+                if (!MyAPIGateway.Multiplayer.MultiplayerActive)
+                {
+                    this.Serialise();
+                }
             }
         }
 
@@ -154,6 +159,7 @@ namespace UnFoundBug.LightLink
                 }
             }
 
+            Logging.Warn("Settings Upgrade required for " + this.source.DisplayName);
             return newSettingsRequired;
         }
 

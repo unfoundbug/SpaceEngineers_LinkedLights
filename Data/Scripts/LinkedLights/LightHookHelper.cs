@@ -31,6 +31,7 @@ namespace UnFoundBug.LightLink
         {
             if (!controlsInit)
             {
+                Logging.Debug("Initialising Controls");
                 controlsInit = true;
             }
             else
@@ -42,6 +43,8 @@ namespace UnFoundBug.LightLink
             separator = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSeparator, IMyLightingBlock>("lightlink_seperator");
             separator.Enabled = (lb) => true;
             separator.Visible = (lb) => true;
+
+            Logging.Debug("Seperator initialised");
 
             scanSubgridCb = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyLightingBlock>("lightlink_scanSubGrid");
             scanSubgridCb.Title = MyStringId.GetOrCompute("Scan Subgrids");
@@ -61,6 +64,7 @@ namespace UnFoundBug.LightLink
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             scanSubgridCb.Visible = block => true;
+            Logging.Debug("SubGridOnOff initialised");
 
             filterListCB = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyLightingBlock>("lightlink_scanSubGrid");
             filterListCB.Title = MyStringId.GetOrCompute("Filter Available blocks");
@@ -76,10 +80,10 @@ namespace UnFoundBug.LightLink
             {
                 StorageHandler handler = new StorageHandler(block);
                 handler.BlockFiltering = value;
-                listControl.UpdateVisual();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             filterListCB.Visible = block => true;
+            Logging.Debug("FilterListOnOff initialised");
 
             listControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlListbox, IMyLightingBlock>("lightlink_block");
             listControl.Title = MyStringId.GetOrCompute("Linked Block");
@@ -139,7 +143,27 @@ namespace UnFoundBug.LightLink
                                 continue;
                             }
 
-                            if (funcBlock is IMyProductionBlock)
+                            if (funcBlock is IMyDoor)
+                            {
+                                continue;
+                            }
+
+                            if (funcBlock is IMyGasTank)
+                            {
+                                continue;
+                            }
+
+                            if (funcBlock is IMyRadioAntenna)
+                            {
+                                continue;
+                            }
+
+                            if (funcBlock is IMyUpgradeModule)
+                            {
+                                continue;
+                            }
+
+                            if (funcBlock is IMyTextPanel)
                             {
                                 continue;
                             }
@@ -168,6 +192,7 @@ namespace UnFoundBug.LightLink
 
                 // Logging.Instance.WriteLine("Redrawn");
             };
+            Logging.Debug("ListControl initialised");
 
             flagControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlListbox, IMyLightingBlock>("lightlink_flags");
             flagControl.Title = MyStringId.GetOrCompute("Enable source");
@@ -230,6 +255,15 @@ namespace UnFoundBug.LightLink
                 }
 
                 items.Add(new MyTerminalControlListBoxItem(
+                    MyStringId.GetOrCompute("Charged"),
+                    MyStringId.GetOrCompute("Batteries only: Is the battery full? (99% or above to prevent flickering)"),
+                    LightEnableOptions.Battery_Charged));
+                if ((storage.ActiveFlags & LightEnableOptions.Battery_Charged) == LightEnableOptions.Battery_Charged)
+                {
+                    selected.Add(items.Last());
+                }
+
+                items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("Recharge Mode"),
                     MyStringId.GetOrCompute("Batteries only: is the battery set to charge mode"),
                     LightEnableOptions.Battery_ChargeMode));
@@ -238,7 +272,7 @@ namespace UnFoundBug.LightLink
                     selected.Add(items.Last());
                 }
             };
-
+            Logging.Debug("FlagControl initialised");
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(separator);
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(scanSubgridCb);
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(filterListCB);
@@ -249,6 +283,7 @@ namespace UnFoundBug.LightLink
             MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(filterListCB);
             MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(listControl);
             MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(flagControl);
+            Logging.Debug("Controls Registered");
         }
     }
 }
