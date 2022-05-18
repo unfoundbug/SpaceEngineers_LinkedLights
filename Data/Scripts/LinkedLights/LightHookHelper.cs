@@ -60,7 +60,8 @@ namespace UnFoundBug.LightLink
             {
                 StorageHandler handler = new StorageHandler(block);
                 handler.SubGridScanningEnable = value;
-                listControl.VisibleRowsCount = listControl.VisibleRowsCount;
+                MyAPIGateway.TerminalControls.GetControls<IMyLightingBlock>(out var controls);
+                controls.Where(control => control.Id == "lightlink_block").ForEach(list => list.UpdateVisual());
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             scanSubgridCb.Visible = block => true;
@@ -80,6 +81,8 @@ namespace UnFoundBug.LightLink
             {
                 StorageHandler handler = new StorageHandler(block);
                 handler.BlockFiltering = value;
+                MyAPIGateway.TerminalControls.GetControls<IMyLightingBlock>(out var controls);
+                controls.Where(control => control.Id == "lightlink_block").ForEach(list => list.UpdateVisual());
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             filterListCB.Visible = block => true;
@@ -102,6 +105,9 @@ namespace UnFoundBug.LightLink
 
                     // Logging.Instance.WriteLine("Value set");
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+
+                    MyAPIGateway.TerminalControls.GetControls<IMyLightingBlock>(out var controls);
+                    controls.Where(control => control.Id == "lightlink_flags").ForEach(list => list.UpdateVisual());
                 }
             };
             listControl.ListContent = (block, items, selected) =>
