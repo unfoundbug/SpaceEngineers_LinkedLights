@@ -17,6 +17,11 @@ namespace UnFoundBug.LightLink
     public enum LightEnableOptions
     {
         /// <summary>
+        /// Not displayed, here for cast reasons.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
         /// Loads from the Enable option
         /// </summary>
         Generic_Enable = 1 << 1,
@@ -45,5 +50,15 @@ namespace UnFoundBug.LightLink
         /// The selected Battery is at 99% or above charge
         /// </summary>
         Battery_Charged = 1 << 6,
+
+        /// <summary>
+        /// The selected tank is at 99% or above capacity
+        /// </summary>
+        Tank_Full = 1 << 7,
+
+        /// <summary>
+        /// The tank is stockpiling
+        /// </summary>
+        Tank_Stockpile = 1 << 8,
     }
 }

@@ -101,10 +101,11 @@ namespace UnFoundBug.LightLink
                 if (localLight != null && selected.Count != 0)
                 {
                     StorageHandler storage = new StorageHandler(block);
-                    storage.TargetEntity = (long)selected.FirstOrDefault().UserData;
+                    storage.TargetEntity = (long)(selected.FirstOrDefault()?.UserData ?? 0);
 
-                    // Logging.Instance.WriteLine("Value set");
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+
+                    flagControl.UpdateVisual();
                 }
             };
             listControl.ListContent = (block, items, selected) =>
@@ -118,7 +119,7 @@ namespace UnFoundBug.LightLink
                 items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("None"),
                     MyStringId.GetOrCompute("None"),
-                    0));
+                        0L));
 
                 // Logging.Instance.WriteLine("Added None Entry");
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
@@ -147,6 +148,8 @@ namespace UnFoundBug.LightLink
                             continue;
                         }
 
+                        addedBlocks.Add(funcBlock.EntityId);
+
                         if (storage.BlockFiltering)
                         {
                             if (funcBlock is IMyLightingBlock)
@@ -155,11 +158,6 @@ namespace UnFoundBug.LightLink
                             }
 
                             if (funcBlock is IMyDoor)
-                            {
-                                continue;
-                            }
-
-                            if (funcBlock is IMyGasTank)
                             {
                                 continue;
                             }
@@ -178,9 +176,12 @@ namespace UnFoundBug.LightLink
                             {
                                 continue;
                             }
-                        }
 
-                        addedBlocks.Add(funcBlock.EntityId);
+                            if (funcBlock is IMyThrust)
+                            {
+                                continue;
+                            }
+                        }
 
                         var newItem = new MyTerminalControlListBoxItem(
                             MyStringId.GetOrCompute(funcBlock.DisplayNameText),
@@ -233,58 +234,102 @@ namespace UnFoundBug.LightLink
                 var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
                 StorageHandler storage = new StorageHandler(block);
 
-                items.Add(new MyTerminalControlListBoxItem(
-                    MyStringId.GetOrCompute("Enable"),
-                    MyStringId.GetOrCompute("Is the block Enabled"),
-                    LightEnableOptions.Generic_Enable));
-                if ((storage.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable)
+                IMyEntity targetBlock = null;
+                if (storage.TargetEntity != 0)
                 {
-                    selected.Add(items.Last());
+                    targetBlock = MyAPIGateway.Entities.GetEntityById(storage.TargetEntity);
                 }
 
-                items.Add(new MyTerminalControlListBoxItem(
-                    MyStringId.GetOrCompute("Functional"),
-                    MyStringId.GetOrCompute("Is the block in a runnable state"),
-                    LightEnableOptions.Generic_IsFunctional));
-                if ((storage.ActiveFlags & LightEnableOptions.Generic_IsFunctional) == LightEnableOptions.Generic_IsFunctional)
+                if (targetBlock != null)
                 {
-                    selected.Add(items.Last());
-                }
+                    items.Add(new MyTerminalControlListBoxItem(
+                        MyStringId.GetOrCompute("Enable"),
+                        MyStringId.GetOrCompute("Is the block Enabled"),
+                        LightEnableOptions.Generic_Enable));
+                    if ((storage.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable)
+                    {
+                        selected.Add(items.Last());
+                    }
 
-                items.Add(new MyTerminalControlListBoxItem(
-                    MyStringId.GetOrCompute("Active"),
-                    MyStringId.GetOrCompute("Tools only: Is the tool running"),
-                    LightEnableOptions.Tool_IsActive));
-                if ((storage.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
-                {
-                    selected.Add(items.Last());
-                }
+                    items.Add(new MyTerminalControlListBoxItem(
+                        MyStringId.GetOrCompute("Functional"),
+                        MyStringId.GetOrCompute("Is the block in a runnable state"),
+                        LightEnableOptions.Generic_IsFunctional));
+                    if ((storage.ActiveFlags & LightEnableOptions.Generic_IsFunctional) ==
+                        LightEnableOptions.Generic_IsFunctional)
+                    {
+                        selected.Add(items.Last());
+                    }
 
-                items.Add(new MyTerminalControlListBoxItem(
-                    MyStringId.GetOrCompute("Charging"),
-                    MyStringId.GetOrCompute("Batteries only: Is the battery charging"),
-                    LightEnableOptions.Battery_Charging));
-                if ((storage.ActiveFlags & LightEnableOptions.Battery_Charging) == LightEnableOptions.Battery_Charging)
-                {
-                    selected.Add(items.Last());
-                }
+                    if (targetBlock is IMyShipToolBase || targetBlock is IMyProductionBlock)
+                    {
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Active"),
+                            MyStringId.GetOrCompute("Tools only: Is the tool running"),
+                            LightEnableOptions.Tool_IsActive));
+                        if ((storage.ActiveFlags & LightEnableOptions.Tool_IsActive) ==
+                            LightEnableOptions.Tool_IsActive)
+                        {
+                            selected.Add(items.Last());
+                        }
+                    }
 
-                items.Add(new MyTerminalControlListBoxItem(
-                    MyStringId.GetOrCompute("Charged"),
-                    MyStringId.GetOrCompute("Batteries only: Is the battery full? (99% or above to prevent flickering)"),
-                    LightEnableOptions.Battery_Charged));
-                if ((storage.ActiveFlags & LightEnableOptions.Battery_Charged) == LightEnableOptions.Battery_Charged)
-                {
-                    selected.Add(items.Last());
-                }
+                    if (targetBlock is IMyBatteryBlock)
+                    {
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Charging"),
+                            MyStringId.GetOrCompute("Batteries only: Is the battery charging"),
+                            LightEnableOptions.Battery_Charging));
+                        if ((storage.ActiveFlags & LightEnableOptions.Battery_Charging) ==
+                            LightEnableOptions.Battery_Charging)
+                        {
+                            selected.Add(items.Last());
+                        }
 
-                items.Add(new MyTerminalControlListBoxItem(
-                    MyStringId.GetOrCompute("Recharge Mode"),
-                    MyStringId.GetOrCompute("Batteries only: is the battery set to charge mode"),
-                    LightEnableOptions.Battery_ChargeMode));
-                if ((storage.ActiveFlags & LightEnableOptions.Battery_ChargeMode) == LightEnableOptions.Battery_ChargeMode)
-                {
-                    selected.Add(items.Last());
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Charged"),
+                            MyStringId.GetOrCompute(
+                                "Batteries only: Is the battery full? (99% or above to prevent flickering)"),
+                            LightEnableOptions.Battery_Charged));
+                        if ((storage.ActiveFlags & LightEnableOptions.Battery_Charged) ==
+                            LightEnableOptions.Battery_Charged)
+                        {
+                            selected.Add(items.Last());
+                        }
+
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Recharge Mode"),
+                            MyStringId.GetOrCompute("Batteries only: is the battery set to charge mode"),
+                            LightEnableOptions.Battery_ChargeMode));
+                        if ((storage.ActiveFlags & LightEnableOptions.Battery_ChargeMode) ==
+                            LightEnableOptions.Battery_ChargeMode)
+                        {
+                            selected.Add(items.Last());
+                        }
+                    }
+
+                    if (targetBlock is IMyGasTank)
+                    {
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Full"),
+                            MyStringId.GetOrCompute("The tank is full"),
+                            LightEnableOptions.Tank_Full));
+                        if ((storage.ActiveFlags & LightEnableOptions.Tank_Full) ==
+                            LightEnableOptions.Tank_Full)
+                        {
+                            selected.Add(items.Last());
+                        }
+
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Stockpile"),
+                            MyStringId.GetOrCompute("The tank is stockpiling"),
+                            LightEnableOptions.Tank_Stockpile));
+                        if ((storage.ActiveFlags & LightEnableOptions.Tank_Stockpile) ==
+                            LightEnableOptions.Tank_Stockpile)
+                        {
+                            selected.Add(items.Last());
+                        }
+                    }
                 }
             };
             Logging.Debug("FlagControl initialised");

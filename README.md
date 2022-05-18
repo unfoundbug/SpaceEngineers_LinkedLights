@@ -15,8 +15,14 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.0.8
+	Fixed potential crash when selecting None
+	Add Tank light enable options
+	Filter available enable options based on selected target
+
 V0.0.7
 	Fix Auto-Refresh issue.
+	Enable name sorting of available blocks.
 
 V0.0.6
 	Better filtering of 'less interesting' blocks

@@ -4,11 +4,8 @@
 
 namespace UnFoundBug.LightLink
 {
-    using System.Collections.Generic;
-    using System.Linq;
     using Sandbox.ModAPI;
     using VRage.Game.Components;
-    using VRage.Game.ModAPI;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
@@ -54,25 +51,11 @@ namespace UnFoundBug.LightLink
 
             if (this.sHandler.TargetEntity != 0)
             {
-                List<IMyCubeGrid> activeGrids = new List<IMyCubeGrid>();
-                if (!this.sHandler.SubGridScanningEnable)
-                {
-                    activeGrids.Add(this.BaseLight.CubeGrid);
-                }
-                else
-                {
-                    this.BaseLight.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
-                }
+                var target = MyAPIGateway.Entities.GetEntityById(this.sHandler.TargetEntity);
 
-                foreach (var grid in activeGrids)
+                if (target != null)
                 {
-                    var funcBlocks = grid.GetFatBlocks<IMyFunctionalBlock>();
-                    var target = funcBlocks.FirstOrDefault(found => found.EntityId == this.sHandler.TargetEntity);
-                    if (target != null)
-                    {
-                        this.AttachTarget(target);
-                        break;
-                    }
+                    this.AttachTarget(target as IMyFunctionalBlock);
                 }
             }
             else
@@ -86,7 +69,7 @@ namespace UnFoundBug.LightLink
         {
             base.UpdateBeforeSimulation10();
 
-            if (this.targetBlock == null)
+            if (this.targetBlock == null || this.sHandler.TargetEntity == 0)
             {
                 return;
             }
@@ -131,22 +114,16 @@ namespace UnFoundBug.LightLink
                     }
                 }
 
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) ==
-                    LightEnableOptions.Battery_Charging)
+                if (this.targetBlock is IMyBatteryBlock)
                 {
-                    if (this.targetBlock is IMyBatteryBlock)
+                    var asBatt = this.targetBlock as IMyBatteryBlock;
+                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) != 0)
                     {
-                        var asBatt = this.targetBlock as IMyBatteryBlock;
                         newEnable |= asBatt.IsCharging;
                     }
-                }
 
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charged) ==
-                    LightEnableOptions.Battery_Charged)
-                {
-                    if (this.targetBlock is IMyBatteryBlock)
+                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charged) != 0)
                     {
-                        var asBatt = this.targetBlock as IMyBatteryBlock;
                         newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
                     }
                 }
@@ -158,6 +135,20 @@ namespace UnFoundBug.LightLink
                     {
                         var asBatt = this.targetBlock as IMyBatteryBlock;
                         newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
+                    }
+                }
+
+                if (this.targetBlock is IMyGasTank)
+                {
+                    var asTank = this.targetBlock as IMyGasTank;
+                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Tank_Full) != 0)
+                    {
+                        newEnable |= asTank.FilledRatio > 0.99;
+                    }
+
+                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Tank_Stockpile) != 0)
+                    {
+                        newEnable |= asTank.Stockpile;
                     }
                 }
             }
