@@ -15,6 +15,9 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.0.7
+	Fix Auto-Refresh issue.
+
 V0.0.6
 	Better filtering of 'less interesting' blocks
 	Filtering enabled by default

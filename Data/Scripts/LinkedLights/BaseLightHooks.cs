@@ -61,12 +61,12 @@ namespace UnFoundBug.LightLink
                 }
                 else
                 {
-                    var foundGrids = this.BaseLight.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
+                    this.BaseLight.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
                 }
 
                 foreach (var grid in activeGrids)
                 {
-                    var funcBlocks = this.BaseLight.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
+                    var funcBlocks = grid.GetFatBlocks<IMyFunctionalBlock>();
                     var target = funcBlocks.FirstOrDefault(found => found.EntityId == this.sHandler.TargetEntity);
                     if (target != null)
                     {
@@ -92,55 +92,73 @@ namespace UnFoundBug.LightLink
             }
 
             bool newEnable = false;
+            bool skipChecks = false;
 
-            if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable)
+            if (this.sHandler.SubGridScanningEnable)
             {
-                newEnable |= this.targetBlock.Enabled;
-            }
-
-            if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_IsFunctional) == LightEnableOptions.Generic_IsFunctional)
-            {
-                newEnable |= this.targetBlock.IsFunctional;
-            }
-
-            if ((this.sHandler.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
-            {
-                if (this.targetBlock is IMyShipToolBase)
+                // Target may be detached
+                if (!this.BaseLight.CubeGrid.IsInSameLogicalGroupAs(this.targetBlock.CubeGrid))
                 {
-                    var asTool = this.targetBlock as IMyShipToolBase;
-                    newEnable |= asTool.IsActivated;
-                }
-                else if (this.targetBlock is IMyProductionBlock)
-                {
-                    var asRef = this.targetBlock as IMyProductionBlock;
-                    newEnable |= asRef.IsProducing && asRef.Enabled;
+                    skipChecks = true;
                 }
             }
 
-            if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) == LightEnableOptions.Battery_Charging)
+            if (!skipChecks)
             {
-                if (this.targetBlock is IMyBatteryBlock)
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_Enable) ==
+                    LightEnableOptions.Generic_Enable)
                 {
-                    var asBatt = this.targetBlock as IMyBatteryBlock;
-                    newEnable |= asBatt.IsCharging;
+                    newEnable |= this.targetBlock.Enabled;
                 }
-            }
 
-            if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charged) == LightEnableOptions.Battery_Charged)
-            {
-                if (this.targetBlock is IMyBatteryBlock)
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_IsFunctional) ==
+                    LightEnableOptions.Generic_IsFunctional)
                 {
-                    var asBatt = this.targetBlock as IMyBatteryBlock;
-                    newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
+                    newEnable |= this.targetBlock.IsFunctional;
                 }
-            }
 
-            if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_ChargeMode) == LightEnableOptions.Battery_ChargeMode)
-            {
-                if (this.targetBlock is IMyBatteryBlock)
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
                 {
-                    var asBatt = this.targetBlock as IMyBatteryBlock;
-                    newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
+                    if (this.targetBlock is IMyShipToolBase)
+                    {
+                        var asTool = this.targetBlock as IMyShipToolBase;
+                        newEnable |= asTool.IsActivated;
+                    }
+                    else if (this.targetBlock is IMyProductionBlock)
+                    {
+                        var asRef = this.targetBlock as IMyProductionBlock;
+                        newEnable |= asRef.IsProducing && asRef.Enabled;
+                    }
+                }
+
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) ==
+                    LightEnableOptions.Battery_Charging)
+                {
+                    if (this.targetBlock is IMyBatteryBlock)
+                    {
+                        var asBatt = this.targetBlock as IMyBatteryBlock;
+                        newEnable |= asBatt.IsCharging;
+                    }
+                }
+
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charged) ==
+                    LightEnableOptions.Battery_Charged)
+                {
+                    if (this.targetBlock is IMyBatteryBlock)
+                    {
+                        var asBatt = this.targetBlock as IMyBatteryBlock;
+                        newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
+                    }
+                }
+
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_ChargeMode) ==
+                    LightEnableOptions.Battery_ChargeMode)
+                {
+                    if (this.targetBlock is IMyBatteryBlock)
+                    {
+                        var asBatt = this.targetBlock as IMyBatteryBlock;
+                        newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
+                    }
                 }
             }
 
@@ -163,6 +181,7 @@ namespace UnFoundBug.LightLink
         private void AttachTarget(IMyFunctionalBlock newTarget)
         {
             this.DetachFromTarget();
+
             if (newTarget != null)
             {
                 this.targetBlock = newTarget;

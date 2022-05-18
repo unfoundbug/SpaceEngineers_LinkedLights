@@ -42,14 +42,7 @@ namespace UnFoundBug.LightLink
         public StorageHandler(IMyEntity source)
         {
             this.source = source;
-            if (!this.Deserialise())
-            {
-                // load reduction where possible
-                if (!MyAPIGateway.Multiplayer.MultiplayerActive)
-                {
-                    this.Serialise();
-                }
-            }
+            this.Deserialise();
         }
 
         /// <summary>
