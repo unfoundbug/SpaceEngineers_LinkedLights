@@ -60,5 +60,10 @@ namespace UnFoundBug.LightLink
         /// The tank is stockpiling
         /// </summary>
         Tank_Stockpile = 1 << 8,
+
+        /// <summary>
+        /// The current thruster output power
+        /// </summary>
+        Thrust_Power = 1 << 9,
     }
 }

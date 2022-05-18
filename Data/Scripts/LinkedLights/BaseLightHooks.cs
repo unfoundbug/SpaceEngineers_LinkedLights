@@ -4,10 +4,12 @@
 
 namespace UnFoundBug.LightLink
 {
+    using System;
     using Sandbox.ModAPI;
     using VRage.Game.Components;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
+    using VRageMath;
 
     /// <summary>
     /// Base handling class for common behaviour across MyObjectBuilder_ types.
@@ -17,6 +19,12 @@ namespace UnFoundBug.LightLink
         private IMyFunctionalBlock targetBlock = null;
 
         private StorageHandler sHandler;
+        private float startR = 0;
+        private float startG = 0;
+        private float startB = 0;
+        private float endR = 1;
+        private float endG = 1;
+        private float endB = 1;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseLightHooks"/> class.
@@ -31,6 +39,7 @@ namespace UnFoundBug.LightLink
         /// <inheritdoc/>
         public override void Close()
         {
+            this.BaseLight.CustomDataChanged -= this.BaseLight_CustomDataChanged;
         }
 
         /// <inheritdoc/>
@@ -40,6 +49,8 @@ namespace UnFoundBug.LightLink
             this.Entity.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             this.Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
             this.sHandler = new StorageHandler(this.Entity);
+            this.BaseLight.CustomDataChanged += this.BaseLight_CustomDataChanged;
+            this.LoadColours();
         }
 
         /// <inheritdoc/>
@@ -74,13 +85,15 @@ namespace UnFoundBug.LightLink
                 return;
             }
 
+            var handledEntity = this.targetBlock;
+
             bool newEnable = false;
             bool skipChecks = false;
 
             if (this.sHandler.SubGridScanningEnable)
             {
                 // Target may be detached
-                if (!this.BaseLight.CubeGrid.IsInSameLogicalGroupAs(this.targetBlock.CubeGrid))
+                if (!this.BaseLight.CubeGrid.IsInSameLogicalGroupAs(handledEntity.CubeGrid))
                 {
                     skipChecks = true;
                 }
@@ -91,32 +104,32 @@ namespace UnFoundBug.LightLink
                 if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_Enable) ==
                     LightEnableOptions.Generic_Enable)
                 {
-                    newEnable |= this.targetBlock.Enabled;
+                    newEnable |= handledEntity.Enabled;
                 }
 
                 if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_IsFunctional) ==
                     LightEnableOptions.Generic_IsFunctional)
                 {
-                    newEnable |= this.targetBlock.IsFunctional;
+                    newEnable |= handledEntity.IsFunctional;
                 }
 
                 if ((this.sHandler.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
                 {
-                    if (this.targetBlock is IMyShipToolBase)
+                    if (handledEntity is IMyShipToolBase)
                     {
-                        var asTool = this.targetBlock as IMyShipToolBase;
+                        var asTool = handledEntity as IMyShipToolBase;
                         newEnable |= asTool.IsActivated;
                     }
-                    else if (this.targetBlock is IMyProductionBlock)
+                    else if (handledEntity is IMyProductionBlock)
                     {
-                        var asRef = this.targetBlock as IMyProductionBlock;
+                        var asRef = handledEntity as IMyProductionBlock;
                         newEnable |= asRef.IsProducing && asRef.Enabled;
                     }
                 }
 
-                if (this.targetBlock is IMyBatteryBlock)
+                if (handledEntity is IMyBatteryBlock)
                 {
-                    var asBatt = this.targetBlock as IMyBatteryBlock;
+                    var asBatt = handledEntity as IMyBatteryBlock;
                     if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) != 0)
                     {
                         newEnable |= asBatt.IsCharging;
@@ -131,16 +144,16 @@ namespace UnFoundBug.LightLink
                 if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_ChargeMode) ==
                     LightEnableOptions.Battery_ChargeMode)
                 {
-                    if (this.targetBlock is IMyBatteryBlock)
+                    if (handledEntity is IMyBatteryBlock)
                     {
-                        var asBatt = this.targetBlock as IMyBatteryBlock;
+                        var asBatt = handledEntity as IMyBatteryBlock;
                         newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
                     }
                 }
 
-                if (this.targetBlock is IMyGasTank)
+                if (handledEntity is IMyGasTank)
                 {
-                    var asTank = this.targetBlock as IMyGasTank;
+                    var asTank = handledEntity as IMyGasTank;
                     if ((this.sHandler.ActiveFlags & LightEnableOptions.Tank_Full) != 0)
                     {
                         newEnable |= asTank.FilledRatio > 0.99;
@@ -150,6 +163,23 @@ namespace UnFoundBug.LightLink
                     {
                         newEnable |= asTank.Stockpile;
                     }
+                }
+
+                if ((this.sHandler.ActiveFlags & LightEnableOptions.Thrust_Power) != 0)
+                {
+                    var asThrust = handledEntity as IMyThrust;
+                    newEnable = true;
+                    float endLightIntensity = asThrust.CurrentThrust / asThrust.MaxThrust;
+                    this.LoadColours();
+
+                    var resultantColour = Color.Lerp(new Color(this.startR, this.startG, this.startB), new Color(this.endR, this.endG, this.endB), endLightIntensity);
+
+                    if (string.IsNullOrWhiteSpace(this.BaseLight.CustomData))
+                    {
+                        this.BaseLight.CustomData = "Colours are 0-255 R G B\nHigh: 255 255 255\nLow: 0 0 0";
+                    }
+
+                    this.BaseLight.Color = resultantColour;
                 }
             }
 
@@ -183,6 +213,80 @@ namespace UnFoundBug.LightLink
         private void TargetBlock_OnMarkForClose(IMyEntity obj)
         {
             this.DetachFromTarget();
+        }
+
+        private void BaseLight_CustomDataChanged(IMyTerminalBlock obj)
+        {
+            this.LoadColours();
+        }
+
+        private void LoadColours()
+        {
+            var source = this.BaseLight.CustomData;
+            var lines = source.Split('\n');
+            foreach (var line in lines)
+            {
+                byte newComp;
+                var components = line.Split(' ');
+                if (line.StartsWith("High: "))
+                {
+                    if (byte.TryParse(components[1], out newComp))
+                    {
+                        this.endR = newComp / (float)byte.MaxValue;
+                    }
+                    else
+                    {
+                        this.endR = 1.0f;
+                    }
+
+                    if (byte.TryParse(components[2], out newComp))
+                    {
+                        this.endG = newComp / (float)byte.MaxValue;
+                    }
+                    else
+                    {
+                        this.endG = 1.0f;
+                    }
+
+                    if (byte.TryParse(components[3], out newComp))
+                    {
+                        this.endB = newComp / (float)byte.MaxValue;
+                    }
+                    else
+                    {
+                        this.endB = 1.0f;
+                    }
+                }
+                else if (line.StartsWith("Low: "))
+                {
+                    if (byte.TryParse(components[1], out newComp))
+                    {
+                        this.startR = newComp / (float)byte.MaxValue;
+                    }
+                    else
+                    {
+                        this.startR = 1.0f;
+                    }
+
+                    if (byte.TryParse(components[2], out newComp))
+                    {
+                        this.startG = newComp / (float)byte.MaxValue;
+                    }
+                    else
+                    {
+                        this.startG = 1.0f;
+                    }
+
+                    if (byte.TryParse(components[3], out newComp))
+                    {
+                        this.startB = newComp / (float)byte.MaxValue;
+                    }
+                    else
+                    {
+                        this.startB = 1.0f;
+                    }
+                }
+            }
         }
     }
 }

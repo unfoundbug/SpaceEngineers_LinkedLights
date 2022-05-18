@@ -119,7 +119,7 @@ namespace UnFoundBug.LightLink
                 items.Add(new MyTerminalControlListBoxItem(
                     MyStringId.GetOrCompute("None"),
                     MyStringId.GetOrCompute("None"),
-                        0L));
+                    0L));
 
                 // Logging.Instance.WriteLine("Added None Entry");
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
@@ -326,6 +326,20 @@ namespace UnFoundBug.LightLink
                             LightEnableOptions.Tank_Stockpile));
                         if ((storage.ActiveFlags & LightEnableOptions.Tank_Stockpile) ==
                             LightEnableOptions.Tank_Stockpile)
+                        {
+                            selected.Add(items.Last());
+                        }
+                    }
+
+                    if (targetBlock is IMyThrust)
+                    {
+                        items.Add(new MyTerminalControlListBoxItem(
+                            MyStringId.GetOrCompute("Thrust"),
+                            MyStringId.GetOrCompute("EXPERIMENTAL: Brightness of light = thrust, colour is R/G/B in Custom data."),
+                            LightEnableOptions.Thrust_Power));
+
+                        if ((storage.ActiveFlags & LightEnableOptions.Thrust_Power) ==
+                            LightEnableOptions.Thrust_Power)
                         {
                             selected.Add(items.Last());
                         }

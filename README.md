@@ -15,6 +15,10 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.0.9
+	Experimental Thrust linkage
+		Loads start/end colours from a lights CustomData to fade according to output power.
+
 V0.0.8
 	Fixed potential crash when selecting None
 	Add Tank light enable options
