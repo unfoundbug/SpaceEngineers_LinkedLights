@@ -6,6 +6,7 @@ namespace UnFoundBug.LightLink
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Sandbox.Game.Gui;
     using Sandbox.Game.Screens.Terminal.Controls;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Interfaces.Terminal;
@@ -61,8 +62,7 @@ namespace UnFoundBug.LightLink
             {
                 StorageHandler handler = new StorageHandler(block);
                 handler.SubGridScanningEnable = value;
-                MyAPIGateway.TerminalControls.GetControls<IMyLightingBlock>(out var controls);
-                controls.Where(control => control.Id == "lightlink_block").ForEach(list => list.UpdateVisual());
+                listControl.UpdateVisual();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             scanSubgridCb.Visible = block => true;
@@ -82,8 +82,7 @@ namespace UnFoundBug.LightLink
             {
                 StorageHandler handler = new StorageHandler(block);
                 handler.BlockFiltering = value;
-                MyAPIGateway.TerminalControls.GetControls<IMyLightingBlock>(out var controls);
-                controls.Where(control => control.Id == "lightlink_block").ForEach(list => list.UpdateVisual());
+                listControl.UpdateVisual();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             filterListCB.Visible = block => true;
@@ -106,9 +105,6 @@ namespace UnFoundBug.LightLink
 
                     // Logging.Instance.WriteLine("Value set");
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-
-                    MyAPIGateway.TerminalControls.GetControls<IMyLightingBlock>(out var controls);
-                    controls.Where(control => control.Id == "lightlink_flags").ForEach(list => list.UpdateVisual());
                 }
             };
             listControl.ListContent = (block, items, selected) =>
@@ -136,6 +132,7 @@ namespace UnFoundBug.LightLink
                 {
                     block.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
                 }
+
                 List<MyTerminalControlListBoxItem> resultsList = new List<MyTerminalControlListBoxItem>();
 
                 foreach (var activeGrid in activeGrids)
@@ -145,7 +142,6 @@ namespace UnFoundBug.LightLink
                     // Logging.Instance.WriteLine("Found " + funcBlocks.ToList().Count + " functional block sources");
                     foreach (var funcBlock in funcBlocks)
                     {
-
                         if (addedBlocks.Contains(funcBlock.EntityId))
                         {
                             continue;
@@ -205,7 +201,7 @@ namespace UnFoundBug.LightLink
                     selected.Add(resultsList[0]);
                 }
 
-                resultsList.Sort(new System.Comparison<MyTerminalControlListBoxItem>((a, b) => a.Text.String.CompareTo(b.Text.String)));
+                resultsList.Sort(new CLBIComparer());
 
                 resultsList.ForEach(entry => items.Add(entry));
 
