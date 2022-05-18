@@ -6,6 +6,7 @@ namespace UnFoundBug.LightLink
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Sandbox.Game.Screens.Terminal.Controls;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Interfaces.Terminal;
     using VRage.Game.ModAPI;
@@ -96,7 +97,7 @@ namespace UnFoundBug.LightLink
             listControl.VisibleRowsCount = 8;
             listControl.ItemSelected = (block, selected) =>
             {
-                // Logging.Instance.WriteLine("Light item selected: " + block.DisplayNameText + "has selected:  " + selected.Count.ToString());
+                // Logging.Instance.WriteLine("Light item selected: " + block.DisplayNameText + MyAPIGateway.Gui.ChangeInteractedEntity();"has selected:  " + selected.Count.ToString());
                 var localLight = (IMyLightingBlock)block;
                 if (localLight != null && selected.Count != 0)
                 {
@@ -126,22 +127,29 @@ namespace UnFoundBug.LightLink
                 // Logging.Instance.WriteLine("Added None Entry");
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
                 List<IMyCubeGrid> activeGrids = new List<IMyCubeGrid>();
+                List<long> addedBlocks = new List<long>();
                 if (!storage.SubGridScanningEnable)
                 {
                     activeGrids.Add(block.CubeGrid);
                 }
                 else
                 {
-                    var foundGrids = block.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
+                    block.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
                 }
 
                 foreach (var activeGrid in activeGrids)
                 {
-                    var funcBlocks = block.CubeGrid.GetFatBlocks<IMyFunctionalBlock>();
+                    var funcBlocks = activeGrid.GetFatBlocks<IMyFunctionalBlock>();
 
                     // Logging.Instance.WriteLine("Found " + funcBlocks.ToList().Count + " functional block sources");
                     foreach (var funcBlock in funcBlocks)
                     {
+
+                        if (addedBlocks.Contains(funcBlock.EntityId))
+                        {
+                            continue;
+                        }
+
                         if (storage.BlockFiltering)
                         {
                             if (funcBlock is IMyLightingBlock)
@@ -175,10 +183,7 @@ namespace UnFoundBug.LightLink
                             }
                         }
 
-                        if (!funcBlock.ShowInTerminal)
-                        {
-                            continue;
-                        }
+                        addedBlocks.Add(funcBlock.EntityId);
 
                         var newItem = new MyTerminalControlListBoxItem(
                             MyStringId.GetOrCompute(funcBlock.DisplayNameText),
