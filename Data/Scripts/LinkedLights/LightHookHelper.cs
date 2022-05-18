@@ -134,6 +134,7 @@ namespace UnFoundBug.LightLink
                 {
                     var foundGrids = block.CubeGrid.GetGridGroup(GridLinkTypeEnum.Physical).GetGrids(activeGrids);
                 }
+                List<MyTerminalControlListBoxItem> resultsList = new List<MyTerminalControlListBoxItem>();
 
                 foreach (var activeGrid in activeGrids)
                 {
@@ -190,16 +191,18 @@ namespace UnFoundBug.LightLink
                             selected.Add(newItem);
                         }
 
-                        items.Add(newItem);
+                        resultsList.Add(newItem);
                     }
                 }
 
                 if (selected.Count == 0)
                 {
-                    selected.Add(items[0]);
+                    selected.Add(resultsList[0]);
                 }
 
-                listControl.RedrawControl();
+                resultsList.Sort(new System.Comparison<MyTerminalControlListBoxItem>((a, b) => a.Text.String.CompareTo(b.Text.String)));
+
+                resultsList.ForEach(entry => items.Add(entry));
 
                 // Logging.Instance.WriteLine("Redrawn");
             };
