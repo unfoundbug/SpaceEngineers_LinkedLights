@@ -10,7 +10,7 @@ namespace UnFoundBug.LightLink
     /// <summary>
     /// Hooks for MyObjectBuilder_SignalLight.
     /// </summary>
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_SignalLight), true)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_SignalLight), false)]
     public class MovingLightHooks : BaseLightHooks
     {
     }

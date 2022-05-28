@@ -19,7 +19,6 @@ namespace UnFoundBug.LightLink
     /// </summary>
     public static class LightHookHelper
     {
-        private static bool controlsInit = false;
         private static IMyTerminalControlSeparator separator;
         private static IMyTerminalControlListbox listControl;
         private static IMyTerminalControlOnOffSwitch scanSubgridCb;
@@ -31,22 +30,10 @@ namespace UnFoundBug.LightLink
         /// </summary>
         public static void AttachControls()
         {
-            if (!controlsInit)
-            {
-                Logging.Debug("Initialising Controls");
-                controlsInit = true;
-            }
-            else
-            {
-                return;
-            }
-
             // Logging.Instance.WriteLine("Light hook controls for " + typeof(IMyLightingBlock).Name + " started.");
             separator = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSeparator, IMyLightingBlock>("lightlink_seperator");
             separator.Enabled = (lb) => true;
             separator.Visible = (lb) => true;
-
-            Logging.Debug("Seperator initialised");
 
             scanSubgridCb = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyLightingBlock>("lightlink_scanSubGrid");
             scanSubgridCb.Title = MyStringId.GetOrCompute("Scan Subgrids");
@@ -55,18 +42,16 @@ namespace UnFoundBug.LightLink
             scanSubgridCb.Tooltip = MyStringId.GetOrCompute("WARNING: Can cause alot of server load!");
             scanSubgridCb.Getter = block =>
             {
-                StorageHandler handler = new StorageHandler(block);
-                return handler.SubGridScanningEnable;
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                return logic.EnableSubGrid;
             };
             scanSubgridCb.Setter = (block, value) =>
             {
-                StorageHandler handler = new StorageHandler(block);
-                handler.SubGridScanningEnable = value;
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                logic.EnableSubGrid = value;
                 listControl.UpdateVisual();
-                block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             scanSubgridCb.Visible = block => true;
-            Logging.Debug("SubGridOnOff initialised");
 
             filterListCB = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyLightingBlock>("lightlink_scanSubGrid");
             filterListCB.Title = MyStringId.GetOrCompute("Filter Available blocks");
@@ -75,18 +60,17 @@ namespace UnFoundBug.LightLink
             filterListCB.OffText = MyStringId.GetOrCompute("Disabled");
             filterListCB.Getter = block =>
             {
-                StorageHandler handler = new StorageHandler(block);
-                return handler.BlockFiltering;
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                return logic.EnableFiltering;
             };
             filterListCB.Setter = (block, value) =>
             {
-                StorageHandler handler = new StorageHandler(block);
-                handler.BlockFiltering = value;
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                logic.EnableFiltering = value;
                 listControl.UpdateVisual();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             };
             filterListCB.Visible = block => true;
-            Logging.Debug("FilterListOnOff initialised");
 
             listControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlListbox, IMyLightingBlock>("lightlink_block");
             listControl.Title = MyStringId.GetOrCompute("Linked Block");
@@ -100,8 +84,8 @@ namespace UnFoundBug.LightLink
                 var localLight = (IMyLightingBlock)block;
                 if (localLight != null && selected.Count != 0)
                 {
-                    StorageHandler storage = new StorageHandler(block);
-                    storage.TargetEntity = (long)(selected.FirstOrDefault()?.UserData ?? 0);
+                    var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                    logic.TargetEntity = (long)(selected.FirstOrDefault()?.UserData ?? 0);
 
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
 
@@ -112,8 +96,8 @@ namespace UnFoundBug.LightLink
             {
                 // Logging.Instance.WriteLine("List content building!");
                 var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
-                StorageHandler storage = new StorageHandler(block);
-                long targetId = storage.TargetEntity;
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                long targetId = logic.TargetEntity;
 
                 // Logging.Instance.WriteLine("Source block as lightsource: " + localLight == null ? "NULL" : "Not Null");
                 items.Add(new MyTerminalControlListBoxItem(
@@ -125,7 +109,7 @@ namespace UnFoundBug.LightLink
                 List<IMyFunctionalBlock> foundBlockList = new List<IMyFunctionalBlock>();
                 List<IMyCubeGrid> activeGrids = new List<IMyCubeGrid>();
                 List<long> addedBlocks = new List<long>();
-                if (!storage.SubGridScanningEnable)
+                if (!logic.EnableSubGrid)
                 {
                     activeGrids.Add(block.CubeGrid);
                 }
@@ -150,7 +134,7 @@ namespace UnFoundBug.LightLink
 
                         addedBlocks.Add(funcBlock.EntityId);
 
-                        if (storage.BlockFiltering)
+                        if (logic.EnableFiltering)
                         {
                             if (funcBlock is IMyLightingBlock)
                             {
@@ -208,36 +192,29 @@ namespace UnFoundBug.LightLink
 
                 // Logging.Instance.WriteLine("Redrawn");
             };
-            Logging.Debug("ListControl initialised");
 
             flagControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlListbox, IMyLightingBlock>("lightlink_flags");
             flagControl.Title = MyStringId.GetOrCompute("Enable source");
             flagControl.Tooltip = MyStringId.GetOrCompute("Each selected option is ORd together, to get the light's state");
-            flagControl.Multiselect = true;
+            flagControl.Multiselect = false;
             flagControl.Visible = block => true;
             flagControl.VisibleRowsCount = 8;
             flagControl.ItemSelected = (block, selected) =>
             {
-                LightEnableOptions resultant = 0;
-                foreach (var selection in selected)
-                {
-                    resultant |= (LightEnableOptions)selection.UserData;
-                }
-
-                StorageHandler handler = new StorageHandler(block);
-                handler.ActiveFlags = resultant;
-                block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                LightEnableOptions resultant = (LightEnableOptions)selected.First().UserData;
+                logic.LightEnableOption = resultant;
             };
             flagControl.ListContent = (block, items, selected) =>
             {
+                var logic = block.GameLogic.GetAs<BaseLightHooks>();
                 // Logging.Instance.WriteLine("List content building!");
                 var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
-                StorageHandler storage = new StorageHandler(block);
 
                 IMyEntity targetBlock = null;
-                if (storage.TargetEntity != 0)
+                if (logic.TargetEntity != 0)
                 {
-                    targetBlock = MyAPIGateway.Entities.GetEntityById(storage.TargetEntity);
+                    targetBlock = MyAPIGateway.Entities.GetEntityById(logic.TargetEntity);
                 }
 
                 if (targetBlock != null)
@@ -246,7 +223,7 @@ namespace UnFoundBug.LightLink
                         MyStringId.GetOrCompute("Enable"),
                         MyStringId.GetOrCompute("Is the block Enabled"),
                         LightEnableOptions.Generic_Enable));
-                    if ((storage.ActiveFlags & LightEnableOptions.Generic_Enable) == LightEnableOptions.Generic_Enable)
+                    if (logic.LightEnableOption == LightEnableOptions.Generic_Enable)
                     {
                         selected.Add(items.Last());
                     }
@@ -255,8 +232,7 @@ namespace UnFoundBug.LightLink
                         MyStringId.GetOrCompute("Functional"),
                         MyStringId.GetOrCompute("Is the block in a runnable state"),
                         LightEnableOptions.Generic_IsFunctional));
-                    if ((storage.ActiveFlags & LightEnableOptions.Generic_IsFunctional) ==
-                        LightEnableOptions.Generic_IsFunctional)
+                    if (logic.LightEnableOption == LightEnableOptions.Generic_IsFunctional)
                     {
                         selected.Add(items.Last());
                     }
@@ -267,8 +243,7 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute("Active"),
                             MyStringId.GetOrCompute("Tools only: Is the tool running"),
                             LightEnableOptions.Tool_IsActive));
-                        if ((storage.ActiveFlags & LightEnableOptions.Tool_IsActive) ==
-                            LightEnableOptions.Tool_IsActive)
+                        if (logic.LightEnableOption == LightEnableOptions.Tool_IsActive)
                         {
                             selected.Add(items.Last());
                         }
@@ -280,8 +255,7 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute("Charging"),
                             MyStringId.GetOrCompute("Batteries only: Is the battery charging"),
                             LightEnableOptions.Battery_Charging));
-                        if ((storage.ActiveFlags & LightEnableOptions.Battery_Charging) ==
-                            LightEnableOptions.Battery_Charging)
+                        if (logic.LightEnableOption == LightEnableOptions.Battery_Charging)
                         {
                             selected.Add(items.Last());
                         }
@@ -291,8 +265,7 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute(
                                 "Batteries only: Is the battery full? (99% or above to prevent flickering)"),
                             LightEnableOptions.Battery_Charged));
-                        if ((storage.ActiveFlags & LightEnableOptions.Battery_Charged) ==
-                            LightEnableOptions.Battery_Charged)
+                        if (logic.LightEnableOption == LightEnableOptions.Battery_Charged)
                         {
                             selected.Add(items.Last());
                         }
@@ -301,8 +274,7 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute("Recharge Mode"),
                             MyStringId.GetOrCompute("Batteries only: is the battery set to charge mode"),
                             LightEnableOptions.Battery_ChargeMode));
-                        if ((storage.ActiveFlags & LightEnableOptions.Battery_ChargeMode) ==
-                            LightEnableOptions.Battery_ChargeMode)
+                        if (logic.LightEnableOption == LightEnableOptions.Battery_ChargeMode)
                         {
                             selected.Add(items.Last());
                         }
@@ -314,8 +286,7 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute("Full"),
                             MyStringId.GetOrCompute("The tank is full"),
                             LightEnableOptions.Tank_Full));
-                        if ((storage.ActiveFlags & LightEnableOptions.Tank_Full) ==
-                            LightEnableOptions.Tank_Full)
+                        if (logic.LightEnableOption == LightEnableOptions.Tank_Full)
                         {
                             selected.Add(items.Last());
                         }
@@ -324,8 +295,7 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute("Stockpile"),
                             MyStringId.GetOrCompute("The tank is stockpiling"),
                             LightEnableOptions.Tank_Stockpile));
-                        if ((storage.ActiveFlags & LightEnableOptions.Tank_Stockpile) ==
-                            LightEnableOptions.Tank_Stockpile)
+                        if (logic.LightEnableOption == LightEnableOptions.Tank_Stockpile)
                         {
                             selected.Add(items.Last());
                         }
@@ -338,15 +308,13 @@ namespace UnFoundBug.LightLink
                             MyStringId.GetOrCompute("EXPERIMENTAL: Brightness of light = thrust, colour is R/G/B in Custom data."),
                             LightEnableOptions.Thrust_Power));
 
-                        if ((storage.ActiveFlags & LightEnableOptions.Thrust_Power) ==
-                            LightEnableOptions.Thrust_Power)
+                        if (logic.LightEnableOption == LightEnableOptions.Thrust_Power)
                         {
                             selected.Add(items.Last());
                         }
                     }
                 }
             };
-            Logging.Debug("FlagControl initialised");
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(separator);
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(scanSubgridCb);
             MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(filterListCB);
@@ -357,7 +325,6 @@ namespace UnFoundBug.LightLink
             MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(filterListCB);
             MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(listControl);
             MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(flagControl);
-            Logging.Debug("Controls Registered");
         }
     }
 }

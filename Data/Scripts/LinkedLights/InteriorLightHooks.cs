@@ -10,7 +10,7 @@ namespace UnFoundBug.LightLink
     /// <summary>
     /// Hooks for MyObjectBuilder_InteriorLight, also impacts LightPanel.
     /// </summary>
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorLight), true)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorLight), false)]
     public class InteriorLightHooks : BaseLightHooks
     {
     }

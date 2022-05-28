@@ -65,5 +65,10 @@ namespace UnFoundBug.LightLink
         /// The current thruster output power
         /// </summary>
         Thrust_Power = 1 << 9,
+
+        /// <summary>
+        /// The current Tank fill percentage
+        /// </summary>
+        Tank_Fill = 1 << 10,
     }
 }

@@ -71,11 +71,10 @@
     <Compile Include="CLBIComparer.cs" />
     <Compile Include="LightEnableOptions.cs" />
     <Compile Include="LightHookHelper.cs" />
-    <Compile Include="Logging.cs" />
     <Compile Include="MovingLightHooks.cs" />
     <Compile Include="InteriorLightHooks.cs" />
     <Compile Include="ReflectorLightHooks.cs" />
-    <Compile Include="StorageHandler.cs" />
+    <Compile Include="SessionShim.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -90,8 +89,14 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>pushd $(ProjectDir)..\..\..\
-powershell -executionpolicy unrestricted -File ".\PrepPublish.ps1"
-popd</PostBuildEvent>
+powershell -executionpolicy unrestricted -File ".\PrepPublish.ps1" $(ConfigurationName)
+popd
+if $(ConfigurationName) == Debug (
+echo %25Space_Engineers_Path%25\SEWorkshopTool.exe  push --mods %25appdata%25\SpaceEngineers\Mods\UnFoundBug.LinkedLights --message=%25appdata%25\SpaceEngineers\Mods\UnFoundBug.LinkedLights\README.md --visibility Private
+exit 0
+) ELSE ( 
+%25Space_Engineers_Path%25\SEWorkshopTool.exe  push --mods %25appdata%25\SpaceEngineers\Mods\UnFoundBug.LinkedLights --message=%25appdata%25\SpaceEngineers\Mods\UnFoundBug.LinkedLights\README.md 
+)</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.  
        Other similar extension points exist, see Microsoft.Common.targets. 

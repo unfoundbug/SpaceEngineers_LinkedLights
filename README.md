@@ -15,6 +15,9 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.1.0
+	Multiplayer support
+	
 V0.0.9
 	Experimental Thrust linkage
 		Loads start/end colours from a lights CustomData to fade according to output power.

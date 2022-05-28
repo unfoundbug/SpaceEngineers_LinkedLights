@@ -2,13 +2,19 @@
 // Copyright (c) UnFoundBug. All rights reserved.
 // </copyright>
 
+using VRage.Utils;
+
 namespace UnFoundBug.LightLink
 {
     using System;
+    using System.Text;
+    using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
     using VRage.Game.Components;
+    using VRage.Game.ModAPI.Network;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
+    using VRage.Sync;
     using VRageMath;
 
     /// <summary>
@@ -18,7 +24,14 @@ namespace UnFoundBug.LightLink
     {
         private IMyFunctionalBlock targetBlock = null;
 
-        private StorageHandler sHandler;
+        private static readonly Guid StorageGuid = new Guid("{F4D66A79-0469-47A3-903C-7964C8F65A25}");
+
+        private MySync<long, SyncDirection.BothWays> syncTargetEntity = null;
+        private MySync<bool, SyncDirection.BothWays> syncEnableSubGrid = null;
+        private MySync<bool, SyncDirection.BothWays> syncEnableFiltering = null;
+        private MySync<LightEnableOptions, SyncDirection.BothWays> syncEnableOption = null;
+        private bool valueChanged = false;
+
         private float startR = 0;
         private float startG = 0;
         private float startB = 0;
@@ -31,8 +44,72 @@ namespace UnFoundBug.LightLink
         /// </summary>
         public BaseLightHooks()
         {
-            LightHookHelper.AttachControls();
         }
+
+        public long TargetEntity
+        {
+            get
+            {
+                return syncTargetEntity.Value;
+            }
+
+            set
+            {
+                if (value != syncTargetEntity.Value)
+                {
+                    this.syncTargetEntity.Value = value;
+                }
+            }
+        }
+
+        public bool EnableSubGrid
+        {
+            get
+            {
+                return syncEnableSubGrid.Value;
+            }
+
+            set
+            {
+                if(this.syncEnableSubGrid.Value != value)
+                {
+                    this.syncEnableSubGrid.Value = value;
+                }
+            }
+        }
+
+        public bool EnableFiltering
+        {
+            get
+            {
+                return syncEnableFiltering.Value;
+            }
+
+            set
+            {
+                if (this.syncEnableFiltering.Value != value)
+                {
+                    this.syncEnableFiltering.Value = value;
+                }
+            }
+        }
+
+        public LightEnableOptions LightEnableOption
+        {
+            get
+            {
+                return syncEnableOption.Value;
+            }
+
+            set
+            {
+                if (this.syncEnableOption.Value != value)
+                {
+                    this.syncEnableOption.Value = value;
+                }
+            }
+        }
+
 
         private IMyLightingBlock BaseLight => (IMyLightingBlock)this.Entity;
 
@@ -46,54 +123,67 @@ namespace UnFoundBug.LightLink
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             base.Init(objectBuilder);
-            this.Entity.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            this.Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
-            this.sHandler = new StorageHandler(this.Entity);
+            this.Deserialise();
+
+            this.syncEnableOption.ValueChanged += SyncEnableOption_ValueChanged;
+            this.syncEnableSubGrid.ValueChanged += SyncEnableSubGrid_ValueChanged;
+            this.syncTargetEntity.ValueChanged += SyncTargetEntity_ValueChanged;
+
+            SessionShim.Instance.AttemptControlsInit();
+            this.Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             this.BaseLight.CustomDataChanged += this.BaseLight_CustomDataChanged;
             this.LoadColours();
         }
 
-        /// <inheritdoc/>
-        public override void UpdateOnceBeforeFrame()
+        private void SyncTargetEntity_ValueChanged(MySync<long, SyncDirection.BothWays> obj)
         {
-            base.UpdateOnceBeforeFrame();
+            this.Serialise();
+        }
 
-            this.sHandler.Deserialise();
+        private void SyncEnableSubGrid_ValueChanged(MySync<bool, SyncDirection.BothWays> obj)
+        {
+            this.valueChanged = true;
+            this.Serialise();
+        }
 
-            if (this.sHandler.TargetEntity != 0)
-            {
-                var target = MyAPIGateway.Entities.GetEntityById(this.sHandler.TargetEntity);
-
-                if (target != null)
-                {
-                    this.AttachTarget(target as IMyFunctionalBlock);
-                }
-            }
-            else
-            {
-                this.DetachFromTarget();
-            }
+        private void SyncEnableOption_ValueChanged(MySync<LightEnableOptions, SyncDirection.BothWays> obj)
+        {
+            this.Serialise();
         }
 
         /// <inheritdoc/>
-        public override void UpdateBeforeSimulation10()
+        public override bool IsSerialized()
         {
-            base.UpdateBeforeSimulation10();
+            return this.valueChanged | base.IsSerialized();
+        }
 
-            if (this.targetBlock == null || this.sHandler.TargetEntity == 0)
+        /// <inheritdoc/>
+        public override void UpdateAfterSimulation()
+        {
+            base.UpdateAfterSimulation();
+
+            if (this.TargetEntity == 0)
             {
                 return;
             }
 
-            var handledEntity = this.targetBlock;
+            if (this.targetBlock?.EntityId != this.TargetEntity)
+            {
+                this.targetBlock = MyAPIGateway.Entities.GetEntityById(this.TargetEntity) as IMyFunctionalBlock;
+            }
+
+            if (this.targetBlock == null)
+            {
+                return;
+            }
 
             bool newEnable = false;
             bool skipChecks = false;
 
-            if (this.sHandler.SubGridScanningEnable)
+            if (this.syncEnableSubGrid.Value)
             {
                 // Target may be detached
-                if (!this.BaseLight.CubeGrid.IsInSameLogicalGroupAs(handledEntity.CubeGrid))
+                if (!this.BaseLight.CubeGrid.IsInSameLogicalGroupAs(this.targetBlock.CubeGrid))
                 {
                     skipChecks = true;
                 }
@@ -101,85 +191,113 @@ namespace UnFoundBug.LightLink
 
             if (!skipChecks)
             {
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_Enable) ==
-                    LightEnableOptions.Generic_Enable)
+                switch (this.syncEnableOption.Value)
                 {
-                    newEnable |= handledEntity.Enabled;
-                }
+                    case LightEnableOptions.None:
+                        break;
+                    case LightEnableOptions.Generic_Enable:
+                        if (this.targetBlock is IMyFunctionalBlock)
+                        {
+                            var asFunc = this.targetBlock as IMyFunctionalBlock;
+                            newEnable |= asFunc.Enabled;
+                        }
 
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Generic_IsFunctional) ==
-                    LightEnableOptions.Generic_IsFunctional)
-                {
-                    newEnable |= handledEntity.IsFunctional;
-                }
+                        break;
+                    case LightEnableOptions.Generic_IsFunctional:
+                        if (this.targetBlock is IMyFunctionalBlock)
+                        {
+                            var asFunc = this.targetBlock as IMyFunctionalBlock;
+                            newEnable |= asFunc.IsFunctional;
+                        }
+                        break;
+                    case LightEnableOptions.Tool_IsActive:
+                        if (this.targetBlock is IMyShipToolBase)
+                        {
+                            var asTool = this.targetBlock as IMyShipToolBase;
+                            newEnable |= asTool.IsActivated;
+                        }
+                        else if (this.targetBlock is IMyProductionBlock)
+                        {
+                            var asRef = this.targetBlock as IMyProductionBlock;
+                            newEnable |= asRef.IsProducing && asRef.Enabled;
+                        }
 
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Tool_IsActive) == LightEnableOptions.Tool_IsActive)
-                {
-                    if (handledEntity is IMyShipToolBase)
-                    {
-                        var asTool = handledEntity as IMyShipToolBase;
-                        newEnable |= asTool.IsActivated;
-                    }
-                    else if (handledEntity is IMyProductionBlock)
-                    {
-                        var asRef = handledEntity as IMyProductionBlock;
-                        newEnable |= asRef.IsProducing && asRef.Enabled;
-                    }
-                }
+                        break;
+                    case LightEnableOptions.Battery_Charging:
+                        if (this.targetBlock is IMyBatteryBlock)
+                        {
+                            var asBatt = this.targetBlock as IMyBatteryBlock;
+                            newEnable |= asBatt.IsCharging;
+                        }
 
-                if (handledEntity is IMyBatteryBlock)
-                {
-                    var asBatt = handledEntity as IMyBatteryBlock;
-                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charging) != 0)
-                    {
-                        newEnable |= asBatt.IsCharging;
-                    }
+                        break;
+                    case LightEnableOptions.Battery_ChargeMode:
+                        if (this.targetBlock is IMyBatteryBlock)
+                        {
+                            var asBatt = this.targetBlock as IMyBatteryBlock;
+                            newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
+                        }
 
-                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_Charged) != 0)
-                    {
-                        newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
-                    }
-                }
+                        break;
+                    case LightEnableOptions.Battery_Charged:
+                        if (this.targetBlock is IMyBatteryBlock)
+                        {
+                            var asBatt = this.targetBlock as IMyBatteryBlock;
+                            newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
+                        }
 
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Battery_ChargeMode) ==
-                    LightEnableOptions.Battery_ChargeMode)
-                {
-                    if (handledEntity is IMyBatteryBlock)
-                    {
-                        var asBatt = handledEntity as IMyBatteryBlock;
-                        newEnable |= asBatt.ChargeMode == Sandbox.ModAPI.Ingame.ChargeMode.Recharge;
-                    }
-                }
+                        break;
+                    case LightEnableOptions.Tank_Full:
+                        if (this.targetBlock is IMyGasTank)
+                        {
+                            var asTank = this.targetBlock as IMyGasTank;
+                            newEnable |= asTank.FilledRatio > 0.99; ;
+                        }
 
-                if (handledEntity is IMyGasTank)
-                {
-                    var asTank = handledEntity as IMyGasTank;
-                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Tank_Full) != 0)
-                    {
-                        newEnable |= asTank.FilledRatio > 0.99;
-                    }
+                        break;
+                    case LightEnableOptions.Tank_Stockpile:
+                        if (this.targetBlock is IMyGasTank)
+                        {
+                            var asTank = this.targetBlock as IMyGasTank;
+                            newEnable |= asTank.Stockpile;
+                        }
 
-                    if ((this.sHandler.ActiveFlags & LightEnableOptions.Tank_Stockpile) != 0)
-                    {
-                        newEnable |= asTank.Stockpile;
-                    }
-                }
+                        break;
+                    case LightEnableOptions.Tank_Fill:
+                        if (this.targetBlock is IMyGasTank)
+                        {
+                            var asTank = this.targetBlock as IMyGasTank;
+                            newEnable |= asTank.FilledRatio > 0.99;
 
-                if ((this.sHandler.ActiveFlags & LightEnableOptions.Thrust_Power) != 0)
-                {
-                    var asThrust = handledEntity as IMyThrust;
-                    newEnable = true;
-                    float endLightIntensity = asThrust.CurrentThrust / asThrust.MaxThrust;
-                    this.LoadColours();
+                            var resultantColour = Color.Lerp(new Color(this.startR, this.startG, this.startB), new Color(this.endR, this.endG, this.endB), endLightIntensity);
 
-                    var resultantColour = Color.Lerp(new Color(this.startR, this.startG, this.startB), new Color(this.endR, this.endG, this.endB), endLightIntensity);
+                            if (string.IsNullOrWhiteSpace(this.BaseLight.CustomData))
+                            {
+                                this.BaseLight.CustomData = "Colours are 0-255 R G B\nHigh: 255 255 255\nLow: 0 0 0";
+                            }
 
-                    if (string.IsNullOrWhiteSpace(this.BaseLight.CustomData))
-                    {
-                        this.BaseLight.CustomData = "Colours are 0-255 R G B\nHigh: 255 255 255\nLow: 0 0 0";
-                    }
+                            this.BaseLight.Color = resultantColour;
+                        }
 
-                    this.BaseLight.Color = resultantColour;
+                        break;
+                    case LightEnableOptions.Thrust_Power:
+                        if (this.targetBlock is IMyThrust)
+                        {
+                            var asThrust = this.targetBlock as IMyThrust;
+                            newEnable = true;
+                            float endLightIntensity = asThrust.CurrentThrust / asThrust.MaxThrust;
+
+                            var resultantColour = Color.Lerp(new Color(this.startR, this.startG, this.startB), new Color(this.endR, this.endG, this.endB), endLightIntensity);
+
+                            if (string.IsNullOrWhiteSpace(this.BaseLight.CustomData))
+                            {
+                                this.BaseLight.CustomData = "Colours are 0-255 R G B\nHigh: 255 255 255\nLow: 0 0 0";
+                            }
+
+                            this.BaseLight.Color = resultantColour;
+                        }
+
+                        break;
                 }
             }
 
@@ -187,32 +305,6 @@ namespace UnFoundBug.LightLink
             {
                 this.BaseLight.Enabled = newEnable;
             }
-        }
-
-        private void DetachFromTarget()
-        {
-            if (this.targetBlock != null)
-            {
-                // Logging.Instance.WriteLine(this.BaseLight.DisplayNameText + "is now detached from " + this.targetBlock.DisplayNameText);
-                this.targetBlock.OnMarkForClose -= this.TargetBlock_OnMarkForClose;
-                this.targetBlock = null;
-            }
-        }
-
-        private void AttachTarget(IMyFunctionalBlock newTarget)
-        {
-            this.DetachFromTarget();
-
-            if (newTarget != null)
-            {
-                this.targetBlock = newTarget;
-                this.targetBlock.OnMarkForClose += this.TargetBlock_OnMarkForClose;
-            }
-        }
-
-        private void TargetBlock_OnMarkForClose(IMyEntity obj)
-        {
-            this.DetachFromTarget();
         }
 
         private void BaseLight_CustomDataChanged(IMyTerminalBlock obj)
@@ -284,6 +376,75 @@ namespace UnFoundBug.LightLink
                     else
                     {
                         this.startB = 1.0f;
+                    }
+                }
+            }
+        }
+
+        private void Deserialise()
+        {
+            try
+            {
+                if (this.Entity.Storage != null)
+                {
+                    if (this.Entity.Storage.ContainsKey(StorageGuid))
+                    {
+                        string dataSource = this.Entity.Storage.GetValue(StorageGuid);
+                        {
+                            string[] components = dataSource.Split(',');
+                            int versionId = int.Parse(components[0]);
+                            switch (versionId)
+                            {
+                                case 1:
+                                {
+                                    this.TargetEntity = long.Parse(components[1]);
+                                    this.EnableSubGrid = bool.Parse(components[2]);
+                                    this.EnableFiltering = bool.Parse(components[3]);
+                                    this.LightEnableOption =
+                                        (LightEnableOptions) Enum.Parse(typeof(LightEnableOptions), components[4]);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                MyLog.Default.WriteLineAndConsole($"Linked Lights: Error loading light: {Entity.EntityId}");
+
+            }
+        }
+
+        private void Serialise()
+        {
+            this.valueChanged = true;
+            StringBuilder sb = new StringBuilder();
+            sb.Append("1,");
+            sb.Append(this.TargetEntity.ToString());
+            sb.Append(",");
+            sb.Append(this.EnableSubGrid);
+            sb.Append(',');
+            sb.Append(this.EnableFiltering);
+            sb.Append(',');
+            sb.Append(this.LightEnableOption);
+
+            if (this.TargetEntity != 0)
+            {
+                if (this.Entity.Storage == null)
+                {
+                    this.Entity.Storage = new MyModStorageComponent();
+                }
+
+                this.Entity.Storage.SetValue(StorageGuid, sb.ToString());
+            }
+            else
+            {
+                if (this.Entity.Storage != null)
+                {
+                    if (this.Entity.Storage.ContainsKey(StorageGuid))
+                    {
+                        this.Entity.Storage.Remove(StorageGuid);
                     }
                 }
             }

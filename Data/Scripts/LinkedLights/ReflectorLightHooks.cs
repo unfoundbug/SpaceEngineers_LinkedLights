@@ -10,7 +10,7 @@ namespace UnFoundBug.LightLink
     /// <summary>
     /// Hooks for MyObjectBuilder_ReflectorLight.
     /// </summary>
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_ReflectorLight), true)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_ReflectorLight), false)]
     public class ReflectorLightHooks : BaseLightHooks
     {
     }
