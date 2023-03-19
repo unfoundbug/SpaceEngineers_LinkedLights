@@ -15,6 +15,10 @@ Developed by UnFoundBug.
 
 
 ======================
+V0.2.0
+	Fix for constant charging light.
+		Batteries can get stuck at 99.99% , use same offset for charging as charged so lights toggle over at the same time
+
 V0.1.0
 	Multiplayer support
 	

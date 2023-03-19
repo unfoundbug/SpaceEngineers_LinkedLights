@@ -227,7 +227,7 @@ namespace UnFoundBug.LightLink
                         if (this.targetBlock is IMyBatteryBlock)
                         {
                             var asBatt = this.targetBlock as IMyBatteryBlock;
-                            newEnable |= asBatt.IsCharging;
+                            newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) <= 0.995;
                         }
 
                         break;
@@ -243,7 +243,7 @@ namespace UnFoundBug.LightLink
                         if (this.targetBlock is IMyBatteryBlock)
                         {
                             var asBatt = this.targetBlock as IMyBatteryBlock;
-                            newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.99;
+                            newEnable |= (asBatt.CurrentStoredPower / asBatt.MaxStoredPower) > 0.995;
                         }
 
                         break;
