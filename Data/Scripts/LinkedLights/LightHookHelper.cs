@@ -4,6 +4,7 @@
 
 namespace UnFoundBug.LightLink
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Sandbox.Game.Gui;
@@ -28,7 +29,7 @@ namespace UnFoundBug.LightLink
         /// <summary>
         /// Attach controls to light terminal menus.
         /// </summary>
-        public static void AttachControls()
+        public static void AttachControls<typeToRegister>()
         {
             // Logging.Instance.WriteLine("Light hook controls for " + typeof(IMyLightingBlock).Name + " started.");
             separator = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSeparator, IMyLightingBlock>("lightlink_seperator");
@@ -42,12 +43,12 @@ namespace UnFoundBug.LightLink
             scanSubgridCb.Tooltip = MyStringId.GetOrCompute("WARNING: Can cause alot of server load!");
             scanSubgridCb.Getter = block =>
             {
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 return logic.EnableSubGrid;
             };
             scanSubgridCb.Setter = (block, value) =>
             {
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 logic.EnableSubGrid = value;
                 listControl.UpdateVisual();
             };
@@ -60,12 +61,12 @@ namespace UnFoundBug.LightLink
             filterListCB.OffText = MyStringId.GetOrCompute("Disabled");
             filterListCB.Getter = block =>
             {
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 return logic.EnableFiltering;
             };
             filterListCB.Setter = (block, value) =>
             {
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 logic.EnableFiltering = value;
                 listControl.UpdateVisual();
                 block.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
@@ -84,7 +85,7 @@ namespace UnFoundBug.LightLink
                 var localLight = (IMyLightingBlock)block;
                 if (localLight != null && selected.Count != 0)
                 {
-                    var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                    var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                     logic.TargetEntity = (long)(selected.FirstOrDefault()?.UserData ?? 0);
 
                     localLight.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
@@ -96,7 +97,7 @@ namespace UnFoundBug.LightLink
             {
                 // Logging.Instance.WriteLine("List content building!");
                 var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 long targetId = logic.TargetEntity;
 
                 // Logging.Instance.WriteLine("Source block as lightsource: " + localLight == null ? "NULL" : "Not Null");
@@ -195,19 +196,18 @@ namespace UnFoundBug.LightLink
 
             flagControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlListbox, IMyLightingBlock>("lightlink_flags");
             flagControl.Title = MyStringId.GetOrCompute("Enable source");
-            flagControl.Tooltip = MyStringId.GetOrCompute("Each selected option is ORd together, to get the light's state");
             flagControl.Multiselect = false;
             flagControl.Visible = block => true;
             flagControl.VisibleRowsCount = 8;
             flagControl.ItemSelected = (block, selected) =>
             {
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 LightEnableOptions resultant = (LightEnableOptions)selected.First().UserData;
                 logic.LightEnableOption = resultant;
             };
             flagControl.ListContent = (block, items, selected) =>
             {
-                var logic = block.GameLogic.GetAs<BaseLightHooks>();
+                var logic = block.GameLogic.GetAs<BaseLightHooks<typeToRegister>>();
                 // Logging.Instance.WriteLine("List content building!");
                 var localLight = block.GameLogic.GetAs<IMyLightingBlock>();
 
@@ -315,16 +315,11 @@ namespace UnFoundBug.LightLink
                     }
                 }
             };
-            MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(separator);
-            MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(scanSubgridCb);
-            MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(filterListCB);
-            MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(listControl);
-            MyAPIGateway.TerminalControls.AddControl<IMyLightingBlock>(flagControl);
-            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(separator);
-            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(scanSubgridCb);
-            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(filterListCB);
-            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(listControl);
-            MyAPIGateway.TerminalControls.AddControl<IMyReflectorLight>(flagControl);
+            MyAPIGateway.TerminalControls.AddControl<typeToRegister>(separator);
+            MyAPIGateway.TerminalControls.AddControl<typeToRegister>(scanSubgridCb);
+            MyAPIGateway.TerminalControls.AddControl<typeToRegister>(filterListCB);
+            MyAPIGateway.TerminalControls.AddControl<typeToRegister>(listControl);
+            MyAPIGateway.TerminalControls.AddControl<typeToRegister>(flagControl);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace UnFoundBug.LightLink
     /// <summary>
     /// Base handling class for common behaviour across MyObjectBuilder_ types.
     /// </summary>
-    public class BaseLightHooks : MyGameLogicComponent
+    public class BaseLightHooks<typeToRegister> : MyGameLogicComponent
     {
         private IMyFunctionalBlock targetBlock = null;
 
@@ -129,10 +129,15 @@ namespace UnFoundBug.LightLink
             this.syncEnableSubGrid.ValueChanged += SyncEnableSubGrid_ValueChanged;
             this.syncTargetEntity.ValueChanged += SyncTargetEntity_ValueChanged;
 
-            SessionShim.Instance.AttemptControlsInit();
-            this.Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+			this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME | MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             this.BaseLight.CustomDataChanged += this.BaseLight_CustomDataChanged;
             this.LoadColours();
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            SessionShim.Instance.AttemptControlsInit<typeToRegister>();
         }
 
         private void SyncTargetEntity_ValueChanged(MySync<long, SyncDirection.BothWays> obj)
@@ -158,9 +163,9 @@ namespace UnFoundBug.LightLink
         }
 
         /// <inheritdoc/>
-        public override void UpdateAfterSimulation()
+        public override void UpdateBeforeSimulation10()
         {
-            base.UpdateAfterSimulation();
+            base.UpdateBeforeSimulation10();
 
             if (this.TargetEntity == 0)
             {
@@ -268,7 +273,7 @@ namespace UnFoundBug.LightLink
                         {
                             var asTank = this.targetBlock as IMyGasTank;
                             newEnable |= asTank.FilledRatio > 0.99;
-
+							float endLightIntensity = (float)(asTank.FilledRatio);
                             var resultantColour = Color.Lerp(new Color(this.startR, this.startG, this.startB), new Color(this.endR, this.endG, this.endB), endLightIntensity);
 
                             if (string.IsNullOrWhiteSpace(this.BaseLight.CustomData))

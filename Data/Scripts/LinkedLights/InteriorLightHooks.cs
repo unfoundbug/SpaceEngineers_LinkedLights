@@ -5,13 +5,14 @@
 namespace UnFoundBug.LightLink
 {
     using Sandbox.Common.ObjectBuilders;
+    using Sandbox.ModAPI;
     using VRage.Game.Components;
 
     /// <summary>
     /// Hooks for MyObjectBuilder_InteriorLight, also impacts LightPanel.
     /// </summary>
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorLight), false)]
-    public class InteriorLightHooks : BaseLightHooks
+    public class InteriorLightHooks : BaseLightHooks<IMyLightingBlock>
     {
     }
 }

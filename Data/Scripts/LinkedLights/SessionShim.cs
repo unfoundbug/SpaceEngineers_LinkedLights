@@ -4,6 +4,8 @@
 
 namespace UnFoundBug.LightLink
 {
+    using System;
+    using System.Collections.Generic;
     using VRage.Game.Components;
 
     /// <summary>
@@ -17,7 +19,7 @@ namespace UnFoundBug.LightLink
         /// </summary>
         public static SessionShim Instance;
 
-        private bool controlsInit = false;
+        private List<Type> registeredControls = new List<Type>();
 
         /// <inheritdoc/>
         public override void LoadData()
@@ -29,12 +31,12 @@ namespace UnFoundBug.LightLink
         /// <summary>
         /// Attempt to bind connector controls to the UI.
         /// </summary>
-        public void AttemptControlsInit()
+        public void AttemptControlsInit<typeToRegister>()
         {
-            if (!this.controlsInit)
+            if (!this.registeredControls.Contains(typeof(typeToRegister)))
             {
-                this.controlsInit = true;
-                LightHookHelper.AttachControls();
+                this.registeredControls.Add(typeof(typeToRegister));
+                LightHookHelper.AttachControls< typeToRegister>();
             }
         }
 

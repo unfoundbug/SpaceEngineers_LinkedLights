@@ -17,7 +17,10 @@ Developed by UnFoundBug.
 ======================
 V0.2.0
 	Fix for constant charging light.
-		Batteries can get stuck at 99.99% , use same offset for charging as charged so lights toggle over at the same time
+		Batteries can get stuck at 99.99% , use same offset for charging as charged so lights toggle over at the same 
+	Fix for Lights not updating
+		Some circumstances meant lighting effects would not update, reduced update rate to every 10 frames to reduce server load.
+	
 
 V0.1.0
 	Multiplayer support

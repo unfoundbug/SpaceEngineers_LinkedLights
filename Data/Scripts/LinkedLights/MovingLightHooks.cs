@@ -5,13 +5,14 @@
 namespace UnFoundBug.LightLink
 {
     using Sandbox.Common.ObjectBuilders;
+    using Sandbox.ModAPI;
     using VRage.Game.Components;
 
     /// <summary>
     /// Hooks for MyObjectBuilder_SignalLight.
     /// </summary>
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_SignalLight), false)]
-    public class MovingLightHooks : BaseLightHooks
+    public class MovingLightHooks : BaseLightHooks<IMyReflectorLight>
     {
     }
 }
